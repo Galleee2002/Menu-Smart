@@ -1,0 +1,44 @@
+[data-example-theme='minimal-clean'] {
+  --example-bg: #f8fafc;
+  --example-menu-surface: #ffffff;
+  --example-card-surface: #ffffff;
+  --example-muted-surface: #f1f5f9;
+  --example-text: #0f172a;
+  --example-text-muted: #64748b;
+  --example-border: #e2e8f0;
+  --example-primary: #10b981;
+  --example-price: #dc2626;
+  --example-radius-md: 6px;
+  --example-font-body: 'Inter', system-ui, sans-serif;
+  --example-font-heading: 'Inter', system-ui, sans-serif;
+}
+
+[data-example-theme='warm-natural'] {
+  --example-bg: #faf4ea;
+  --example-menu-surface: #fffdf8;
+  --example-card-surface: #ffffff;
+  --example-muted-surface: #f4ead8;
+  --example-text: #2c2c2c;
+  --example-text-muted: #756b5e;
+  --example-border: #e6d8c3;
+  --example-primary: #2d5a3d;
+  --example-price: #2d5a3d;
+  --example-radius-md: 6px;
+  --example-font-body: 'Inter', system-ui, sans-serif;
+  --example-font-heading: Georgia, 'Playfair Display', serif;
+}
+
+[data-example-theme='bold-night'] {
+  --example-bg: #060914;
+  --example-menu-surface: #0b1020;
+  --example-card-surface: #111827;
+  --example-muted-surface: #1f2937;
+  --example-text: #f9fafb;
+  --example-text-muted: #9ca3af;
+  --example-border: #374151;
+  --example-primary: #7c3aed;
+  --example-price: #c4b5fd;
+  --example-radius-md: 6px;
+  --example-font-body: 'Poppins', 'Inter', system-ui, sans-serif;
+  --example-font-heading: 'Poppins', 'Inter', system-ui, sans-serif;
+}

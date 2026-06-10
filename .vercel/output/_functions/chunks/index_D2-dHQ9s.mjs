@@ -1,4 +1,4 @@
-import { v as getDefaultExportFromCjs } from './entrypoint_SmURYjZp.mjs';
+import { w as getDefaultExportFromCjs } from './entrypoint_CrfSiLr5.mjs';
 import require$$0$2 from 'node:util';
 import require$$1$1 from 'node:stream';
 import require$$4 from 'child_process';

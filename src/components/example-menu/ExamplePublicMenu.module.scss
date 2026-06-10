@@ -1,0 +1,116 @@
+.menu {
+  width: 100%;
+  background: var(--example-menu-surface);
+}
+
+.header {
+  position: sticky;
+  top: var(--sticky-offset, 0);
+  z-index: 20;
+  padding: 24px 20px 18px;
+  border-bottom: 1px solid var(--example-border);
+  background: var(--example-menu-surface);
+  text-align: center;
+}
+
+.name {
+  font-family: var(--example-font-heading);
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--example-text);
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin-top: 4px;
+  font-family: var(--example-font-body);
+  font-size: 0.875rem;
+  color: var(--example-text-muted);
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--example-font-body);
+  font-size: 0.75rem;
+  color: var(--example-text-muted);
+}
+
+.categoryBar {
+  position: sticky;
+  top: calc(var(--sticky-offset, 0px) + var(--restaurant-header-height, 0px));
+  z-index: 18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--category-bar-height, 40px);
+  padding: 0 20px;
+  border-bottom: 1px solid var(--example-border);
+  background: var(--example-muted-surface);
+}
+
+.categoryTitle {
+  width: 100%;
+  margin: 0;
+  font-family: var(--example-font-heading);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--example-text);
+  text-align: center;
+  line-height: 1.2;
+  animation: categoryTitleIn 280ms ease;
+}
+
+@keyframes categoryTitleIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.catalog {
+  padding: 0 0 28px;
+}
+
+.categorySection {
+  & + & {
+    border-top: 1px solid var(--example-border);
+  }
+}
+
+.productList {
+  padding: 0 20px;
+}
+
+@media (max-width: 480px) {
+  .header,
+  .categoryBar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .productList {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .categoryTitle {
+    animation: none;
+  }
+}
