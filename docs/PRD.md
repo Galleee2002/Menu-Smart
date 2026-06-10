@@ -2,7 +2,7 @@
 
 | Campo   | Valor        |
 | ------- | ------------ |
-| Versión | 1.2          |
+| Versión | 1.3          |
 | Estado  | Draft        |
 | Owner   | GRGSolutions |
 
@@ -27,8 +27,9 @@
 15. [Fase 4](#15-fase-4)
 16. [Requisitos No Funcionales](#16-requisitos-no-funcionales)
 17. [Entornos](#17-entornos)
-18. [Criterios de Producción MVP](#18-criterios-de-producción-mvp)
-19. [Estado Actual del Proyecto](#19-estado-actual-del-proyecto)
+18. [Estrategia de Testing](#18-estrategia-de-testing)
+19. [Criterios de Producción MVP](#19-criterios-de-producción-mvp)
+20. [Estado Actual del Proyecto](#20-estado-actual-del-proyecto)
 
 ---
 
@@ -71,6 +72,7 @@ El sistema estará diseñado para ser escalable y preparado para evolucionar hac
 | **Base de datos** | Neon PostgreSQL                                        |
 | **Hosting**     | Vercel                                                   |
 | **Versionado**  | Git, GitHub                                              |
+| **Testing**     | Vitest, Testing Library, Playwright, Lighthouse CI, axe-core (Playwright) |
 | **CI/CD**       | GitHub Actions _(fase futura)_                           |
 
 ---
@@ -531,7 +533,134 @@ Gestionado por Better Auth vía Hono:
 
 ---
 
-## 18. Criterios de Producción MVP
+## 18. Estrategia de Testing
+
+### Principios
+
+- Priorizar **tests de integración API** y **E2E de flujos críticos** sobre cobertura superficial de UI.
+- Mantener **paridad con producción** en base de datos de test (PostgreSQL vía Neon branch o instancia local).
+- Automatizar calidad en CI antes de merge a `main`.
+- No bloquear el MVP con cobertura alta en componentes Astro estáticos.
+
+### Pirámide de pruebas
+
+```text
+        ┌─────────────┐
+        │  Playwright │  ~5–8 tests E2E (flujos críticos)
+        ├─────────────┤
+        │   Vitest    │  API + Prisma + Zod + permisos (integración)
+        ├─────────────┤
+        │   Vitest    │  Unitarios puros (helpers, cálculos, validación)
+        └─────────────┘
+```
+
+### Stack de herramientas
+
+| Herramienta | Capa | Uso |
+| ----------- | ---- | --- |
+| **Vitest** | Unit + integración | Runner principal; compatible con Vite/Astro |
+| **@testing-library/react** + **user-event** | Componentes | Islas React del dashboard (formularios, vista previa) |
+| **Playwright** | E2E | Flujos completos con auth por cookies y menú público |
+| **MSW** _(opcional)_ | Frontend | Mock de API en tests de UI aislados |
+| **@lhci/cli** | Rendimiento | Lighthouse automatizado en CI (objetivo > 90) |
+| **@axe-core/playwright** | Accesibilidad | Validación a11y en E2E del menú público |
+
+Detalle de implementación backend: [BACKEND-IMPLEMENTATION.md §14](./BACKEND-IMPLEMENTATION.md#14-estrategia-de-pruebas).
+
+### Alcance por tipo de prueba
+
+#### Unitarios (Vitest)
+
+| Área | Ejemplos |
+| ---- | -------- |
+| Schemas Zod | Payloads de restaurantes, menús, categorías, productos |
+| Lógica de negocio | Cambios masivos de precios (% y fijo), generación de slugs |
+| Autorización | Helpers RBAC Owner vs Staff |
+
+#### Integración (Vitest + Hono + Prisma)
+
+| Área | Ejemplos |
+| ---- | -------- |
+| API Hono | `app.request()` en rutas REST sin levantar servidor |
+| Persistencia | CRUD contra base de datos de test |
+| Auth | Sesiones Better Auth en endpoints protegidos |
+
+#### Componentes (Vitest + Testing Library)
+
+Solo islas React con lógica relevante: formularios CRUD, cambios masivos, vista previa en tiempo real. No priorizar snapshots masivos ni páginas Astro estáticas.
+
+#### E2E (Playwright)
+
+| # | Flujo crítico |
+| - | ------------- |
+| 1 | Registro y login (Better Auth) |
+| 2 | Crear restaurante → menú → categoría → producto |
+| 3 | Publicar menú y verificar menú público en `/menu/:restaurantSlug/:menuSlug` |
+| 4 | Staff edita productos; no puede gestionar usuarios |
+| 5 | Smoke responsive básico del menú público |
+
+Los E2E pueden ejecutarse contra servidor local o Vercel Preview Deployments (staging).
+
+#### Rendimiento y accesibilidad
+
+| Herramienta | Objetivo |
+| ----------- | -------- |
+| Lighthouse CI | Score > 90 en build de Astro |
+| axe-core (Playwright) | Sin violaciones críticas en menú público |
+
+### Base de datos de test
+
+| Entorno | Estrategia |
+| ------- | ---------- |
+| Local / CI | Rama de Neon (`neon branches`) o PostgreSQL local con `DATABASE_URL` dedicada |
+| Seed | Script `prisma/seed.ts`: Owner, Staff, restaurante, menús, categorías e ítems de ejemplo |
+
+Evitar SQLite para tests de integración: mantener paridad con Neon PostgreSQL en producción.
+
+### Scripts npm (referencia)
+
+```json
+{
+  "test": "vitest",
+  "test:run": "vitest run",
+  "test:e2e": "playwright test",
+  "test:e2e:ui": "playwright test --ui",
+  "lhci": "lhci autorun"
+}
+```
+
+### CI (GitHub Actions — fase futura)
+
+```yaml
+# Flujo típico en pull request
+- pnpm install
+- prisma migrate deploy   # contra DB de test
+- pnpm test:run           # Vitest (unit + integración)
+- pnpm build              # astro build
+- pnpm test:e2e           # Playwright (servidor local o preview URL)
+- pnpm lhci               # Lighthouse CI
+```
+
+### Prioridades MVP
+
+| Prioridad | Qué testear |
+| --------- | ----------- |
+| **Alta** | Integración API (Hono + Prisma + Zod + RBAC) |
+| **Alta** | E2E smoke: auth, CRUD catálogo, menú público |
+| **Media** | Unitarios: bulk pricing, slugs, validación |
+| **Media** | Lighthouse CI > 90 |
+| **Baja** | Componentes React aislados (solo con lógica compleja) |
+
+### Fuera de alcance MVP
+
+- Cobertura > 80 % en componentes Astro estáticos.
+- Tests E2E de cada variante de tema.
+- Snapshot masivo de UI.
+- Contract testing entre servicios.
+
+---
+
+## 19. Criterios de Producción MVP
 
 El producto será considerado listo para producción cuando:
 
@@ -545,10 +674,14 @@ El producto será considerado listo para producción cuando:
 - [ ] Deploy automatizado funcionando.
 - [ ] Responsive validado.
 - [ ] Lighthouse superior a 90.
+- [ ] Suite Vitest en verde (unit + integración API).
+- [ ] Al menos 5 tests E2E críticos en verde (auth, CRUD, menú público, roles).
+- [ ] Lighthouse CI > 90 en staging.
+- [ ] Menú público sin violaciones a11y críticas (axe-core).
 
 ---
 
-## 19. Estado Actual del Proyecto
+## 20. Estado Actual del Proyecto
 
 **Situación actual:**
 
