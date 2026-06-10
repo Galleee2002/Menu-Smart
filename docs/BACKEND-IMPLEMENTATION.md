@@ -2,8 +2,8 @@
 
 | Campo      | Valor                                          |
 | ---------- | ---------------------------------------------- |
-| Versión    | 1.1                                            |
-| Estado     | Draft                                          |
+| Versión    | 1.3                                            |
+| Estado     | Fase 0 completada · Fase 1 pendiente           |
 | Referencia | [PRD.md](./PRD.md) v1.3                        |
 | Alcance    | API Hono, Prisma, Better Auth, Neon PostgreSQL |
 | Owner      | GRGSolutions                                   |
@@ -51,18 +51,22 @@ El frontend (Astro + React) consume esta API; las fases aquí descritas no inclu
 
 ## 2. Estado actual
 
-Según el PRD y el repositorio:
+Actualizado tras cierre de **Fase 0** (2026-06-10):
 
-| Componente               | Estado                       |
-| ------------------------ | ---------------------------- |
-| Dependencias Hono/Prisma | Instaladas en `package.json` |
-| Esquema Prisma           | Sin esquema definitivo       |
-| API Hono                 | Sin implementar              |
-| Better Auth              | Sin implementar              |
-| Integración Neon         | Sin implementar              |
-| Zod                      | Pendiente de instalar        |
+| Componente               | Estado                                                                 |
+| ------------------------ | ---------------------------------------------------------------------- |
+| Neon PostgreSQL          | Provisionado; migración inicial aplicada; rama **Test** permanente para pruebas |
+| Esquema Prisma           | Dominio + Better Auth en `prisma/schema.prisma`                        |
+| Cliente Prisma           | Singleton con `@prisma/adapter-pg` en `src/server/lib/prisma.ts`       |
+| API Hono                 | Montada en `/api/*` vía `src/pages/api/[...path].ts`                   |
+| Health check             | `GET /api/health` operativo                                            |
+| Utilidades transversales | `errors.ts`, `response.ts`, `env.ts`                                   |
+| Vitest                   | Configurado; smoke test de health en verde                             |
+| `.env.example`           | Documentado (incluye `DATABASE_URL_TEST`)                              |
+| Better Auth              | Dependencia instalada; rutas pendientes (Fase 1)                       |
+| Zod / validación         | Dependencias instaladas; schemas pendientes (Fase 1)                   |
 
-**Punto de partida:** Fase 0.
+**Punto de partida:** Fase 1 — MVP (Backend).
 
 ---
 
@@ -150,13 +154,13 @@ prisma/
 
 ### 5.1 Entregables
 
-- [ ] Proyecto Neon provisionado (dev + staging).
-- [ ] Esquema Prisma inicial con modelos de dominio y tablas Better Auth.
-- [ ] Cliente Prisma configurado con adapter `@prisma/adapter-pg`.
-- [ ] App Hono montada bajo `/api/*` desde Astro.
-- [ ] Variables de entorno documentadas y `.env.example`.
-- [ ] Health check `GET /api/health`.
-- [ ] Vitest configurado con test de smoke para `GET /api/health`.
+- [x] Proyecto Neon provisionado (dev + staging).
+- [x] Esquema Prisma inicial con modelos de dominio y tablas Better Auth.
+- [x] Cliente Prisma configurado con adapter `@prisma/adapter-pg`.
+- [x] App Hono montada bajo `/api/*` desde Astro.
+- [x] Variables de entorno documentadas y `.env.example`.
+- [x] Health check `GET /api/health`.
+- [x] Vitest configurado con test de smoke para `GET /api/health`.
 
 ### 5.2 Tareas
 
@@ -291,15 +295,94 @@ model Theme {
 2. Crear `vitest.config.ts` en raíz del proyecto.
 3. Añadir `src/test/helpers.ts` con stubs para DB de test (implementación completa en Fase 1).
 4. Primer test: `GET /api/health` con `app.request()` → status 200 y envelope `{ success: true }`.
-5. Documentar `DATABASE_URL` de test en `.env.example` (Neon branch o Postgres local).
+5. Documentar `DATABASE_URL_TEST` en `.env.example` apuntando a la rama Neon **Test** permanente (§14.1).
 
 ### 5.3 Criterios de aceptación — Fase 0
 
-- [ ] `pnpm prisma migrate dev` ejecuta sin errores en local.
-- [ ] `GET /api/health` responde 200 en dev.
-- [ ] Prisma Studio puede listar tablas vacías.
-- [ ] Build de Astro incluye el handler API sin errores de TypeScript.
-- [ ] `pnpm test:run` ejecuta al menos el test de health check en verde.
+- [x] `pnpm prisma migrate dev` ejecuta sin errores en local.
+- [x] `GET /api/health` responde 200 en dev.
+- [x] Prisma Studio puede listar tablas vacías.
+- [x] Build de Astro incluye el handler API sin errores de TypeScript.
+- [x] `pnpm test:run` ejecuta al menos el test de health check en verde.
+
+### 5.4 Implementación completada (Fase 0)
+
+**Fecha de cierre:** 2026-06-10.
+
+#### Archivos clave
+
+| Archivo | Rol |
+| ------- | --- |
+| `prisma/schema.prisma` | Modelos Better Auth + dominio (Restaurant, Menu, Category, MenuItem, Theme, UserRestaurant) |
+| `prisma/migrations/20260610172923_init/` | Migración inicial aplicada en Neon |
+| `prisma.config.ts` | Configuración Prisma 7 con `DATABASE_URL` y `DATABASE_URL_UNPOOLED` |
+| `src/server/index.ts` | App Hono (`basePath /api`), CORS, logger, errores globales, `GET /health` |
+| `src/server/lib/errors.ts` | `AppError`, `NotFoundError`, `ForbiddenError`, `ValidationError` |
+| `src/server/lib/response.ts` | Helpers `ok()` / `fail()` con envelope estándar |
+| `src/server/lib/env.ts` | `getDatabaseUrl()`, `getAllowedOrigins()` |
+| `src/server/lib/prisma.ts` | Cliente Prisma singleton con adapter PG |
+| `src/pages/api/[...path].ts` | Entry point Astro → `app.fetch()` |
+| `vitest.config.ts` | Runner Vitest (entorno Node, `src/**/*.test.ts`) |
+| `src/test/helpers.ts` | Stubs de DB de test (`resetTestDb`, `seedTestData`, `loginAs`) — Fase 1 |
+| `src/server/__tests__/health.test.ts` | Smoke test `GET /api/health` |
+| `.env.example` | Plantilla con `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `DATABASE_URL_TEST` |
+
+#### Scripts npm (Fase 0)
+
+```bash
+pnpm dev              # Astro dev server
+pnpm build            # prisma generate && astro build
+pnpm db:migrate       # prisma migrate dev
+pnpm db:deploy        # prisma migrate deploy
+pnpm db:studio        # Prisma Studio
+pnpm test             # vitest (watch)
+pnpm test:run         # vitest run (CI)
+```
+
+#### Verificación local
+
+```bash
+# Migraciones al día
+pnpm exec prisma migrate status
+
+# Smoke test API (sin servidor HTTP)
+pnpm test:run
+
+# Health check en dev (con pnpm dev en otra terminal)
+curl http://localhost:4321/api/health
+# → {"success":true,"data":{"status":"ok"}}
+```
+
+#### Testing (§5.2.4)
+
+- **Vitest** instalado como devDependency; configuración en raíz (`vitest.config.ts`).
+- El test de health usa `app.request("/api/health")` de Hono — no requiere `DATABASE_URL`.
+- `src/test/helpers.ts` expone stubs documentados para integración con DB real en Fase 1.
+- `DATABASE_URL_TEST` en `.env.example`: apunta a la rama Neon **Test** (permanente); ver §14.1.
+
+#### Rama Neon de test (permanente)
+
+Configurada el **2026-06-10** para aislar pruebas de integración de la base de desarrollo (`main`).
+
+| Campo | Valor |
+| ----- | ----- |
+| Proyecto Neon | `Menu-Smart` (`damp-mountain-62552189`) |
+| Rama | **Test** (`br-lingering-hill-acdovic0`) |
+| Rama padre | `main` (`br-wandering-wave-ac02gqfb`) |
+| Endpoint pooler | `ep-polished-voice-acu5f9kb-pooler.sa-east-1.aws.neon.tech` |
+| Base de datos | `neondb` |
+| Variable local / CI | `DATABASE_URL_TEST` |
+| Expiración | **Ninguna** (rama permanente; TTL eliminado con `neonctl branches set-expiration Test`) |
+
+**Regla:** todos los tests que toquen PostgreSQL (integración, seeds, `resetTestDb`) deben usar `DATABASE_URL_TEST`, **nunca** `DATABASE_URL` (dev). Prisma CLI en CI de test: exportar `DATABASE_URL=$DATABASE_URL_TEST` antes de `prisma migrate deploy`.
+
+#### Notas conocidas
+
+| Tema | Detalle |
+| ---- | ------- |
+| Build en Windows + OneDrive | El paso de empaquetado `@astrojs/vercel` puede fallar con `EPERM` al crear symlinks en `.vercel/output`. La compilación TypeScript/Vite del handler API completa correctamente; el fallo es del adapter en entornos sin permisos de symlink. En CI/Linux y deploy Vercel no aplica. |
+| Staging Neon | Branch de staging recomendado en dashboard Neon; misma convención que dev. |
+| Rama Test | Permanente y dedicada a Vitest/CI; no usar para desarrollo manual ni datos reales. |
 
 ---
 
@@ -997,6 +1080,8 @@ Leyenda: ✅ Permitido · ❌ Denegado · — N/A
 | Variable                | Fase | Descripción                                             |
 | ----------------------- | ---- | ------------------------------------------------------- |
 | `DATABASE_URL`          | 0    | Connection string Neon (pooler)                         |
+| `DATABASE_URL_UNPOOLED` | 0    | Conexión directa Neon (migraciones, Prisma CLI)         |
+| `DATABASE_URL_TEST`     | 0    | **Obligatoria** para tests con DB: connection string de la rama Neon **Test** (permanente). No reutilizar `DATABASE_URL`. Alternativa local: Postgres `smartmenu_test`. Ver §14.1. |
 | `BETTER_AUTH_SECRET`    | 1    | Secreto de firma de sesión                              |
 | `BETTER_AUTH_URL`       | 1    | URL base de la app (ej. `https://smartmenu.vercel.app`) |
 | `NODE_ENV`              | 0    | `development` \| `production`                           |
@@ -1063,11 +1148,50 @@ model AuditLog {
 
 > Visión de producto completa (incluye frontend E2E, Lighthouse y a11y): [PRD §18](./PRD.md#18-estrategia-de-testing).
 
+### 14.1 Rama Neon de test (obligatoria)
+
+Todos los tests que lean o escriban en PostgreSQL deben ejecutarse contra la rama Neon **Test**, configurada como **permanente** (sin TTL) en el proyecto `Menu-Smart`.
+
+| Concepto | Valor |
+| -------- | ----- |
+| Proyecto | `Menu-Smart` — ID `damp-mountain-62552189` |
+| Rama | **Test** — ID `br-lingering-hill-acdovic0` |
+| Variable de entorno | `DATABASE_URL_TEST` |
+| Endpoint (pooler) | `ep-polished-voice-acu5f9kb-pooler.sa-east-1.aws.neon.tech` |
+| Esquema | Mismo que `main`; migración `20260610172923_init` aplicada |
+
+**Cuándo usar cada variable:**
+
+| Variable | Uso |
+| -------- | --- |
+| `DATABASE_URL` | Desarrollo local (`pnpm dev`), Prisma Studio sobre dev, datos de trabajo |
+| `DATABASE_URL_UNPOOLED` | Migraciones contra **main** (`prisma migrate dev`) |
+| `DATABASE_URL_TEST` | **Vitest** (integración), `resetTestDb()`, seeds de test, **CI** (`prisma migrate deploy` + `pnpm test:run`) |
+
+**Prohibido en tests:** apuntar `DATABASE_URL` a la rama Test o reutilizar la DB de desarrollo. `getTestDatabaseUrl()` en `src/test/helpers.ts` resuelve `DATABASE_URL_TEST` con fallback documentado solo para entornos sin rama dedicada.
+
+**Verificación de acceso (local):**
+
+```bash
+# Estado de migraciones en la rama Test
+# PowerShell: $env:DATABASE_URL = $env:DATABASE_URL_TEST
+pnpm exec prisma migrate status
+
+# Smoke sin DB
+pnpm test:run
+```
+
+**Mantenimiento de la rama:**
+
+- Tras nuevas migraciones en `main`, aplicar en Test: `DATABASE_URL=$DATABASE_URL_TEST prisma migrate deploy`.
+- Para resetear datos de test sin tocar dev: `resetTestDb()` (Fase 1) o `neonctl branches reset Test` (pide confirmación; descarta cambios en la rama Test).
+- La rama debe permanecer sin expiración. Si se recrea con TTL por error: `neonctl branches set-expiration Test --project-id damp-mountain-62552189` (sin `--expires-at`).
+
 ### Principios (backend)
 
 - **Vitest** como runner único para unitarios e integración.
 - Probar la API con **`app.request()` de Hono** sin levantar servidor HTTP.
-- Base de datos de test en **PostgreSQL** (Neon branch o instancia local); no SQLite.
+- Base de datos de test en **PostgreSQL** — rama Neon **Test** vía `DATABASE_URL_TEST`; no SQLite.
 - Priorizar endpoints con lógica de negocio y RBAC sobre cobertura de boilerplate.
 
 ### Pirámide (alcance backend)
@@ -1175,7 +1299,7 @@ describe("POST /api/items", () => {
 | `loginAs(role)`   | Obtener cookie de sesión para `app.request()` |
 | `createTestApp()` | Instancia Hono con middleware de test         |
 
-Variables: `DATABASE_URL` apuntando a Neon branch de test o Postgres local (`smartmenu_test`).
+Variables: **`DATABASE_URL_TEST`** (rama Neon **Test**, permanente). En helpers y CI, no usar `DATABASE_URL` de desarrollo. Alternativa local: Postgres `smartmenu_test`.
 
 ### Fase 2+
 
@@ -1239,8 +1363,10 @@ jobs:
       - run: pnpm install
       - run: pnpm db:deploy
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }} # rama Neon Test (permanente)
       - run: pnpm test:run
+        env:
+          DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
       - run: pnpm build
       - run: pnpm test:e2e
       - run: pnpm lhci
@@ -1256,11 +1382,12 @@ jobs:
 
 ### Entornos
 
-| Entorno     | Base de datos       | Deploy            |
-| ----------- | ------------------- | ----------------- |
-| Development | Neon branch dev     | Local `pnpm dev`  |
-| Staging     | Neon branch staging | Vercel Preview    |
-| Production  | Neon main           | Vercel Production |
+| Entorno     | Base de datos                          | Deploy            |
+| ----------- | -------------------------------------- | ----------------- |
+| Development | Neon `main` (`DATABASE_URL`)         | Local `pnpm dev`  |
+| Test / CI   | Neon **Test** (`DATABASE_URL_TEST`)    | GitHub Actions    |
+| Staging     | Neon branch staging                    | Vercel Preview    |
+| Production  | Neon `main`                            | Vercel Production |
 
 ---
 
@@ -1268,7 +1395,7 @@ jobs:
 
 | Fase  | Listo cuando…                                                                                       |
 | ----- | --------------------------------------------------------------------------------------------------- |
-| **0** | Health check OK, schema migrado, Hono montado en Astro                                              |
+| **0** | Health check OK, schema migrado, Hono montado en Astro, Vitest smoke en verde _(completado 2026-06-10)_ |
 | **1** | Todos los criterios PRD sección 19 cumplidos en backend; checklist sección 6.12; tests §14 en verde |
 | **2** | QR, presets y reorder árbol operativos                                                              |
 | **3** | Multi-restaurante + Super Admin + analytics end-to-end                                              |
