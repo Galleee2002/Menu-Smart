@@ -1,12 +1,12 @@
 # SmartMenu — Fases de Implementación del Backend
 
-| Campo        | Valor                                      |
-| ------------ | ------------------------------------------ |
-| Versión      | 1.1                                        |
-| Estado       | Draft                                      |
-| Referencia   | [PRD.md](./PRD.md) v1.3                     |
-| Alcance      | API Hono, Prisma, Better Auth, Neon PostgreSQL |
-| Owner        | GRGSolutions                               |
+| Campo      | Valor                                          |
+| ---------- | ---------------------------------------------- |
+| Versión    | 1.1                                            |
+| Estado     | Draft                                          |
+| Referencia | [PRD.md](./PRD.md) v1.3                        |
+| Alcance    | API Hono, Prisma, Better Auth, Neon PostgreSQL |
+| Owner      | GRGSolutions                                   |
 
 ---
 
@@ -53,14 +53,14 @@ El frontend (Astro + React) consume esta API; las fases aquí descritas no inclu
 
 Según el PRD y el repositorio:
 
-| Componente              | Estado                          |
-| ----------------------- | ------------------------------- |
-| Dependencias Hono/Prisma | Instaladas en `package.json`   |
-| Esquema Prisma          | Sin esquema definitivo          |
-| API Hono                | Sin implementar                 |
-| Better Auth             | Sin implementar                 |
-| Integración Neon        | Sin implementar                 |
-| Zod                     | Pendiente de instalar           |
+| Componente               | Estado                       |
+| ------------------------ | ---------------------------- |
+| Dependencias Hono/Prisma | Instaladas en `package.json` |
+| Esquema Prisma           | Sin esquema definitivo       |
+| API Hono                 | Sin implementar              |
+| Better Auth              | Sin implementar              |
+| Integración Neon         | Sin implementar              |
+| Zod                      | Pendiente de instalar        |
 
 **Punto de partida:** Fase 0.
 
@@ -95,14 +95,14 @@ Según el PRD y el repositorio:
 
 ### Principios de diseño
 
-| Principio | Implementación |
-| --------- | -------------- |
-| Tipado end-to-end | TypeScript estricto; tipos derivados de Prisma y Zod |
-| Separación de capas | Routes → Services → Repositories (Prisma) |
-| Autorización en API | Roles de negocio en `UserRestaurant`; middleware Hono |
-| Respuestas uniformes | Envelope `{ success, data }` / `{ success, error }` |
-| Idempotencia donde aplique | Slugs únicos; validación antes de escritura |
-| Serverless-ready | Sin estado en memoria; conexión Prisma compatible con Vercel |
+| Principio                  | Implementación                                               |
+| -------------------------- | ------------------------------------------------------------ |
+| Tipado end-to-end          | TypeScript estricto; tipos derivados de Prisma y Zod         |
+| Separación de capas        | Routes → Services → Repositories (Prisma)                    |
+| Autorización en API        | Roles de negocio en `UserRestaurant`; middleware Hono        |
+| Respuestas uniformes       | Envelope `{ success, data }` / `{ success, error }`          |
+| Idempotencia donde aplique | Slugs únicos; validación antes de escritura                  |
+| Serverless-ready           | Sin estado en memoria; conexión Prisma compatible con Vercel |
 
 ---
 
@@ -339,12 +339,12 @@ model Theme {
 
 #### Endpoints (Better Auth — gestionados por la librería)
 
-| Acción        | Ruta típica              |
-| ------------- | ------------------------ |
-| Registro      | `POST /api/auth/sign-up` |
-| Login         | `POST /api/auth/sign-in` |
-| Logout        | `POST /api/auth/sign-out`|
-| Sesión actual | `GET /api/auth/session`  |
+| Acción        | Ruta típica               |
+| ------------- | ------------------------- |
+| Registro      | `POST /api/auth/sign-up`  |
+| Login         | `POST /api/auth/sign-in`  |
+| Logout        | `POST /api/auth/sign-out` |
+| Sesión actual | `GET /api/auth/session`   |
 
 ### 6.3 Restaurantes
 
@@ -358,13 +358,13 @@ model Theme {
 
 #### Endpoints
 
-| Método   | Endpoint                    | Auth | Rol    | Descripción |
-| -------- | --------------------------- | ---- | ------ | ----------- |
-| `GET`    | `/api/restaurants`          | Sí   | Cualquiera | Lista el restaurante del usuario (0 o 1 en MVP) |
-| `POST`   | `/api/restaurants`          | Sí   | —      | Crear restaurante + vínculo Owner (falla si ya tiene uno) |
-| `GET`    | `/api/restaurants/:id`      | Sí   | Miembro | Detalle del restaurante |
-| `PATCH`  | `/api/restaurants/:id`      | Sí   | Owner  | Actualizar nombre, descripción, slug, isActive |
-| `DELETE` | `/api/restaurants/:id`      | Sí   | Owner  | Eliminar restaurante y datos en cascada |
+| Método   | Endpoint               | Auth | Rol        | Descripción                                               |
+| -------- | ---------------------- | ---- | ---------- | --------------------------------------------------------- |
+| `GET`    | `/api/restaurants`     | Sí   | Cualquiera | Lista el restaurante del usuario (0 o 1 en MVP)           |
+| `POST`   | `/api/restaurants`     | Sí   | —          | Crear restaurante + vínculo Owner (falla si ya tiene uno) |
+| `GET`    | `/api/restaurants/:id` | Sí   | Miembro    | Detalle del restaurante                                   |
+| `PATCH`  | `/api/restaurants/:id` | Sí   | Owner      | Actualizar nombre, descripción, slug, isActive            |
+| `DELETE` | `/api/restaurants/:id` | Sí   | Owner      | Eliminar restaurante y datos en cascada                   |
 
 #### Esquemas Zod (ejemplo)
 
@@ -372,8 +372,11 @@ model Theme {
 createRestaurantSchema = z.object({
   name: z.string().min(2).max(100),
   description: z.string().max(500).optional(),
-  slug: z.string().regex(/^[a-z0-9-]+$/).optional(),
-})
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
+});
 ```
 
 ### 6.4 Menús
@@ -387,12 +390,12 @@ createRestaurantSchema = z.object({
 
 #### Endpoints
 
-| Método   | Endpoint              | Auth | Rol           | Descripción |
-| -------- | --------------------- | ---- | ------------- | ----------- |
-| `GET`    | `/api/menus`          | Sí   | Miembro       | Lista menús del restaurante del usuario |
-| `POST`   | `/api/menus`          | Sí   | Owner, Staff  | Crear menú |
-| `PATCH`  | `/api/menus/:id`      | Sí   | Owner, Staff  | Editar nombre, slug, isPublished |
-| `DELETE` | `/api/menus/:id`      | Sí   | Owner         | Eliminar menú y categorías/productos |
+| Método   | Endpoint         | Auth | Rol          | Descripción                             |
+| -------- | ---------------- | ---- | ------------ | --------------------------------------- |
+| `GET`    | `/api/menus`     | Sí   | Miembro      | Lista menús del restaurante del usuario |
+| `POST`   | `/api/menus`     | Sí   | Owner, Staff | Crear menú                              |
+| `PATCH`  | `/api/menus/:id` | Sí   | Owner, Staff | Editar nombre, slug, isPublished        |
+| `DELETE` | `/api/menus/:id` | Sí   | Owner        | Eliminar menú y categorías/productos    |
 
 #### Query params (GET)
 
@@ -408,20 +411,23 @@ createRestaurantSchema = z.object({
 
 #### Endpoints
 
-| Método   | Endpoint                    | Auth | Rol          | Descripción |
-| -------- | --------------------------- | ---- | ------------ | ----------- |
-| `GET`    | `/api/categories`           | Sí   | Miembro      | `?menuId=` requerido |
-| `POST`   | `/api/categories`           | Sí   | Owner, Staff | Crear categoría |
-| `PATCH`  | `/api/categories/:id`       | Sí   | Owner, Staff | Editar nombre u orden |
-| `DELETE` | `/api/categories/:id`       | Sí   | Owner, Staff | Eliminar (cascada items) |
-| `PATCH`  | `/api/categories/reorder`   | Sí   | Owner, Staff | Reordenar batch (MVP) |
+| Método   | Endpoint                  | Auth | Rol          | Descripción              |
+| -------- | ------------------------- | ---- | ------------ | ------------------------ |
+| `GET`    | `/api/categories`         | Sí   | Miembro      | `?menuId=` requerido     |
+| `POST`   | `/api/categories`         | Sí   | Owner, Staff | Crear categoría          |
+| `PATCH`  | `/api/categories/:id`     | Sí   | Owner, Staff | Editar nombre u orden    |
+| `DELETE` | `/api/categories/:id`     | Sí   | Owner, Staff | Eliminar (cascada items) |
+| `PATCH`  | `/api/categories/reorder` | Sí   | Owner, Staff | Reordenar batch (MVP)    |
 
 **Payload reorder:**
 
 ```json
 {
   "menuId": "clx...",
-  "items": [{ "id": "cat1", "order": 0 }, { "id": "cat2", "order": 1 }]
+  "items": [
+    { "id": "cat1", "order": 0 },
+    { "id": "cat2", "order": 1 }
+  ]
 }
 ```
 
@@ -436,19 +442,19 @@ createRestaurantSchema = z.object({
 
 #### Endpoints
 
-| Método   | Endpoint              | Auth | Rol          | Descripción |
-| -------- | --------------------- | ---- | ------------ | ----------- |
-| `GET`    | `/api/items`          | Sí   | Miembro      | `?categoryId=` o `?menuId=` |
-| `POST`   | `/api/items`          | Sí   | Owner, Staff | Crear producto |
-| `PATCH`  | `/api/items/:id`      | Sí   | Owner, Staff | Actualizar campos |
-| `DELETE` | `/api/items/:id`      | Sí   | Owner, Staff | Eliminar producto |
-| `PATCH`  | `/api/items/reorder`  | Sí   | Owner, Staff | Reordenar dentro de categoría |
+| Método   | Endpoint             | Auth | Rol          | Descripción                   |
+| -------- | -------------------- | ---- | ------------ | ----------------------------- |
+| `GET`    | `/api/items`         | Sí   | Miembro      | `?categoryId=` o `?menuId=`   |
+| `POST`   | `/api/items`         | Sí   | Owner, Staff | Crear producto                |
+| `PATCH`  | `/api/items/:id`     | Sí   | Owner, Staff | Actualizar campos             |
+| `DELETE` | `/api/items/:id`     | Sí   | Owner, Staff | Eliminar producto             |
+| `PATCH`  | `/api/items/reorder` | Sí   | Owner, Staff | Reordenar dentro de categoría |
 
 #### Cambios masivos de precios (MVP)
 
-| Método | Endpoint                    | Auth | Rol          | Descripción |
-| ------ | --------------------------- | ---- | ------------ | ----------- |
-| `POST` | `/api/items/bulk-pricing`   | Sí   | Owner, Staff | Ajuste masivo |
+| Método | Endpoint                  | Auth | Rol          | Descripción   |
+| ------ | ------------------------- | ---- | ------------ | ------------- |
+| `POST` | `/api/items/bulk-pricing` | Sí   | Owner, Staff | Ajuste masivo |
 
 **Payload:**
 
@@ -484,11 +490,11 @@ createRestaurantSchema = z.object({
 
 #### Endpoints
 
-| Método  | Endpoint                      | Auth | Rol    | Descripción |
-| ------- | ----------------------------- | ---- | ------ | ----------- |
-| `GET`   | `/api/themes/:restaurantId`   | Sí   | Miembro | Obtener tema |
-| `PATCH` | `/api/themes/:restaurantId`   | Sí   | Owner  | Actualizar colores y tipografía |
-| `POST`  | `/api/themes/:restaurantId/apply-preset` | Sí | Owner | Aplicar preset predefinido |
+| Método  | Endpoint                                 | Auth | Rol     | Descripción                     |
+| ------- | ---------------------------------------- | ---- | ------- | ------------------------------- |
+| `GET`   | `/api/themes/:restaurantId`              | Sí   | Miembro | Obtener tema                    |
+| `PATCH` | `/api/themes/:restaurantId`              | Sí   | Owner   | Actualizar colores y tipografía |
+| `POST`  | `/api/themes/:restaurantId/apply-preset` | Sí   | Owner   | Aplicar preset predefinido      |
 
 **Presets MVP (constantes en servidor):**
 
@@ -507,9 +513,9 @@ createRestaurantSchema = z.object({
 
 #### Endpoint
 
-| Método | Endpoint                                              | Auth |
-| ------ | ----------------------------------------------------- | ---- |
-| `GET`  | `/api/public/menu/:restaurantSlug/:menuSlug`          | No   |
+| Método | Endpoint                                     | Auth |
+| ------ | -------------------------------------------- | ---- |
+| `GET`  | `/api/public/menu/:restaurantSlug/:menuSlug` | No   |
 
 **Respuesta (estructura):**
 
@@ -549,25 +555,25 @@ createRestaurantSchema = z.object({
 
 El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 
-| Método | Endpoint                              | Auth | Rol   | Descripción |
-| ------ | ------------------------------------- | ---- | ----- | ----------- |
-| `GET`  | `/api/restaurants/:id/members`        | Sí   | Owner | Listar miembros |
-| `POST` | `/api/restaurants/:id/members`        | Sí   | Owner | Invitar Staff por email (crear vínculo si usuario existe) |
-| `PATCH`| `/api/restaurants/:id/members/:userId`| Sí   | Owner | Cambiar rol Staff |
-| `DELETE`| `/api/restaurants/:id/members/:userId`| Sí  | Owner | Quitar miembro |
+| Método   | Endpoint                               | Auth | Rol   | Descripción                                               |
+| -------- | -------------------------------------- | ---- | ----- | --------------------------------------------------------- |
+| `GET`    | `/api/restaurants/:id/members`         | Sí   | Owner | Listar miembros                                           |
+| `POST`   | `/api/restaurants/:id/members`         | Sí   | Owner | Invitar Staff por email (crear vínculo si usuario existe) |
+| `PATCH`  | `/api/restaurants/:id/members/:userId` | Sí   | Owner | Cambiar rol Staff                                         |
+| `DELETE` | `/api/restaurants/:id/members/:userId` | Sí   | Owner | Quitar miembro                                            |
 
 > Invitación completa por email (Fase 2+). MVP: alta manual si el usuario ya está registrado.
 
 ### 6.10 Middleware y seguridad (MVP)
 
-| Middleware | Fase | Descripción |
-| ---------- | ---- | ----------- |
-| `requireAuth` | 1 | Sesión válida |
-| `requireRestaurantMember` | 1 | Usuario en `UserRestaurant` del recurso |
-| `requireRole(OWNER)` | 1 | RBAC |
-| Validación Zod | 1 | Body y query |
-| Rate limiting básico | 1 | En `/api/auth/*` y público (p. ej. 100 req/min por IP) |
-| CSRF | 1 | Better Auth + SameSite cookies |
+| Middleware                | Fase | Descripción                                            |
+| ------------------------- | ---- | ------------------------------------------------------ |
+| `requireAuth`             | 1    | Sesión válida                                          |
+| `requireRestaurantMember` | 1    | Usuario en `UserRestaurant` del recurso                |
+| `requireRole(OWNER)`      | 1    | RBAC                                                   |
+| Validación Zod            | 1    | Body y query                                           |
+| Rate limiting básico      | 1    | En `/api/auth/*` y público (p. ej. 100 req/min por IP) |
+| CSRF                      | 1    | Better Auth + SameSite cookies                         |
 
 ### 6.11 Tareas de implementación ordenadas
 
@@ -658,14 +664,14 @@ model MenuQrCode {
 
 ### 7.3 Nuevos endpoints
 
-| Método   | Endpoint                         | Descripción |
-| -------- | -------------------------------- | ----------- |
-| `GET`    | `/api/theme-presets`             | Listar presets del restaurante |
-| `POST`   | `/api/theme-presets`             | Guardar preset personalizado |
-| `DELETE` | `/api/theme-presets/:id`         | Eliminar preset |
-| `POST`   | `/api/menus/:id/reorder`         | Reordenar categorías+items en una llamada (árbol) |
-| `POST`   | `/api/menus/:id/qr`              | Generar/regenerar QR |
-| `GET`    | `/api/menus/:id/qr`              | Obtener metadata del QR |
+| Método   | Endpoint                 | Descripción                                       |
+| -------- | ------------------------ | ------------------------------------------------- |
+| `GET`    | `/api/theme-presets`     | Listar presets del restaurante                    |
+| `POST`   | `/api/theme-presets`     | Guardar preset personalizado                      |
+| `DELETE` | `/api/theme-presets/:id` | Eliminar preset                                   |
+| `POST`   | `/api/menus/:id/reorder` | Reordenar categorías+items en una llamada (árbol) |
+| `POST`   | `/api/menus/:id/qr`      | Generar/regenerar QR                              |
+| `GET`    | `/api/menus/:id/qr`      | Obtener metadata del QR                           |
 
 ### 7.4 Servicios externos
 
@@ -744,30 +750,30 @@ model AnalyticsEvent {
 
 **Opciones (elegir una en implementación):**
 
-| Opción | Mecanismo |
-| ------ | --------- |
-| A | Header `X-Restaurant-Id` en cada request admin |
-| B | Cookie `activeRestaurantId` tras `POST /api/session/restaurant` |
-| C | Subdominio o path `/admin/:restaurantId` (coordinación con frontend) |
+| Opción | Mecanismo                                                            |
+| ------ | -------------------------------------------------------------------- |
+| A      | Header `X-Restaurant-Id` en cada request admin                       |
+| B      | Cookie `activeRestaurantId` tras `POST /api/session/restaurant`      |
+| C      | Subdominio o path `/admin/:restaurantId` (coordinación con frontend) |
 
 **Recomendación:** Header `X-Restaurant-Id` + validación de membresía.
 
 ### 8.4 Nuevos endpoints — Multi-tenant
 
-| Método | Endpoint | Rol | Descripción |
-| ------ | -------- | --- | ----------- |
-| `GET` | `/api/restaurants` | User | Lista **todos** los restaurantes del usuario |
-| `POST` | `/api/restaurants` | User | Crear restaurante adicional |
-| `POST` | `/api/session/restaurant` | User | Fijar restaurante activo (si opción B) |
+| Método | Endpoint                  | Rol  | Descripción                                  |
+| ------ | ------------------------- | ---- | -------------------------------------------- |
+| `GET`  | `/api/restaurants`        | User | Lista **todos** los restaurantes del usuario |
+| `POST` | `/api/restaurants`        | User | Crear restaurante adicional                  |
+| `POST` | `/api/session/restaurant` | User | Fijar restaurante activo (si opción B)       |
 
 ### 8.5 Nuevos endpoints — Super Admin
 
-| Método | Endpoint | Rol | Descripción |
-| ------ | -------- | --- | ----------- |
-| `GET` | `/api/admin/restaurants` | SUPER_ADMIN | Listar todos los restaurantes |
+| Método  | Endpoint                     | Rol         | Descripción                    |
+| ------- | ---------------------------- | ----------- | ------------------------------ |
+| `GET`   | `/api/admin/restaurants`     | SUPER_ADMIN | Listar todos los restaurantes  |
 | `PATCH` | `/api/admin/restaurants/:id` | SUPER_ADMIN | Activar/desactivar restaurante |
-| `GET` | `/api/admin/users` | SUPER_ADMIN | Listar usuarios |
-| `PATCH` | `/api/admin/users/:id` | SUPER_ADMIN | Cambiar platformRole |
+| `GET`   | `/api/admin/users`           | SUPER_ADMIN | Listar usuarios                |
+| `PATCH` | `/api/admin/users/:id`       | SUPER_ADMIN | Cambiar platformRole           |
 
 Middleware: `requireSuperAdmin`.
 
@@ -775,17 +781,17 @@ Middleware: `requireSuperAdmin`.
 
 #### Ingesta (público, anónimo)
 
-| Método | Endpoint | Descripción |
-| ------ | -------- | ----------- |
+| Método | Endpoint                      | Descripción                              |
+| ------ | ----------------------------- | ---------------------------------------- |
 | `POST` | `/api/public/analytics/event` | Registrar evento (rate limited, sin PII) |
 
 #### Consulta (admin)
 
-| Método | Endpoint | Descripción |
-| ------ | -------- | ----------- |
-| `GET` | `/api/analytics/summary` | Visitas totales, período |
-| `GET` | `/api/analytics/items/top` | Productos más vistos |
-| `GET` | `/api/analytics/categories/top` | Categorías más vistas |
+| Método | Endpoint                        | Descripción              |
+| ------ | ------------------------------- | ------------------------ |
+| `GET`  | `/api/analytics/summary`        | Visitas totales, período |
+| `GET`  | `/api/analytics/items/top`      | Productos más vistos     |
+| `GET`  | `/api/analytics/categories/top` | Categorías más vistas    |
 
 Query: `?restaurantId=&from=&to=`
 
@@ -877,12 +883,12 @@ model Promotion {
 
 ### 9.3 Nuevos endpoints
 
-| Área | Endpoints |
-| ---- | --------- |
-| Sucursales | `GET/POST /api/branches`, `GET/PATCH/DELETE /api/branches/:id` |
-| Traducciones | `GET/PATCH /api/items/:id/translations`, bulk por menú |
-| Promociones | CRUD `/api/promotions`, `GET /api/public/menu/...` aplica precios promocionales |
-| WhatsApp | `PATCH /api/restaurants/:id` incluye `whatsappNumber`; público expone enlace `wa.me` |
+| Área         | Endpoints                                                                            |
+| ------------ | ------------------------------------------------------------------------------------ |
+| Sucursales   | `GET/POST /api/branches`, `GET/PATCH/DELETE /api/branches/:id`                       |
+| Traducciones | `GET/PATCH /api/items/:id/translations`, bulk por menú                               |
+| Promociones  | CRUD `/api/promotions`, `GET /api/public/menu/...` aplica precios promocionales      |
+| WhatsApp     | `PATCH /api/restaurants/:id` incluye `whatsappNumber`; público expone enlace `wa.me` |
 
 ### 9.4 Menú público — locale
 
@@ -929,10 +935,10 @@ Leyenda: ✅ Permitido · ❌ Denegado · — N/A
 
 ### Fase 3+
 
-| Recurso / Acción      | Super Admin |
-| --------------------- | ----------- |
-| `/api/admin/*`        | ✅          |
-| Restaurantes ajenos   | ✅          |
+| Recurso / Acción        | Super Admin           |
+| ----------------------- | --------------------- |
+| `/api/admin/*`          | ✅                    |
+| Restaurantes ajenos     | ✅                    |
 | Bypass RBAC restaurante | ❌ (usar rutas admin) |
 
 ---
@@ -947,57 +953,57 @@ Leyenda: ✅ Permitido · ❌ Denegado · — N/A
 
 ### Fase 1
 
-| Grupo | Endpoints |
-| ----- | --------- |
-| Auth | `/api/auth/*` |
-| Restaurants | `GET/POST /api/restaurants`, `GET/PATCH/DELETE /api/restaurants/:id` |
-| Members | `GET/POST /api/restaurants/:id/members`, `PATCH/DELETE .../members/:userId` |
-| Menus | `GET/POST /api/menus`, `PATCH/DELETE /api/menus/:id` |
-| Categories | `GET/POST /api/categories`, `PATCH/DELETE /api/categories/:id`, `PATCH /api/categories/reorder` |
-| Items | `GET/POST /api/items`, `PATCH/DELETE /api/items/:id`, `PATCH /api/items/reorder`, `POST /api/items/bulk-pricing` |
-| Themes | `GET/PATCH /api/themes/:restaurantId`, `POST .../apply-preset` |
-| Public | `GET /api/public/menu/:restaurantSlug/:menuSlug` |
+| Grupo       | Endpoints                                                                                                        |
+| ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| Auth        | `/api/auth/*`                                                                                                    |
+| Restaurants | `GET/POST /api/restaurants`, `GET/PATCH/DELETE /api/restaurants/:id`                                             |
+| Members     | `GET/POST /api/restaurants/:id/members`, `PATCH/DELETE .../members/:userId`                                      |
+| Menus       | `GET/POST /api/menus`, `PATCH/DELETE /api/menus/:id`                                                             |
+| Categories  | `GET/POST /api/categories`, `PATCH/DELETE /api/categories/:id`, `PATCH /api/categories/reorder`                  |
+| Items       | `GET/POST /api/items`, `PATCH/DELETE /api/items/:id`, `PATCH /api/items/reorder`, `POST /api/items/bulk-pricing` |
+| Themes      | `GET/PATCH /api/themes/:restaurantId`, `POST .../apply-preset`                                                   |
+| Public      | `GET /api/public/menu/:restaurantSlug/:menuSlug`                                                                 |
 
 ### Fase 2
 
-| Grupo | Endpoints |
-| ----- | --------- |
+| Grupo         | Endpoints                                                      |
+| ------------- | -------------------------------------------------------------- |
 | Theme presets | `GET/POST /api/theme-presets`, `DELETE /api/theme-presets/:id` |
-| Reorder tree | `POST /api/menus/:id/reorder` |
-| QR | `GET/POST /api/menus/:id/qr` |
+| Reorder tree  | `POST /api/menus/:id/reorder`                                  |
+| QR            | `GET/POST /api/menus/:id/qr`                                   |
 
 ### Fase 3
 
-| Grupo | Endpoints |
-| ----- | --------- |
-| Session | `POST /api/session/restaurant` (opcional) |
-| Admin | `GET/PATCH /api/admin/restaurants`, `GET/PATCH /api/admin/users` |
-| Analytics ingest | `POST /api/public/analytics/event` |
-| Analytics query | `GET /api/analytics/summary`, `.../items/top`, `.../categories/top` |
+| Grupo            | Endpoints                                                           |
+| ---------------- | ------------------------------------------------------------------- |
+| Session          | `POST /api/session/restaurant` (opcional)                           |
+| Admin            | `GET/PATCH /api/admin/restaurants`, `GET/PATCH /api/admin/users`    |
+| Analytics ingest | `POST /api/public/analytics/event`                                  |
+| Analytics query  | `GET /api/analytics/summary`, `.../items/top`, `.../categories/top` |
 
 ### Fase 4
 
-| Grupo | Endpoints |
-| ----- | --------- |
-| Branches | CRUD `/api/branches` |
+| Grupo        | Endpoints                               |
+| ------------ | --------------------------------------- |
+| Branches     | CRUD `/api/branches`                    |
 | Translations | `GET/PATCH /api/items/:id/translations` |
-| Promotions | CRUD `/api/promotions` |
-| Public i18n | `GET /api/public/menu/...?locale=` |
+| Promotions   | CRUD `/api/promotions`                  |
+| Public i18n  | `GET /api/public/menu/...?locale=`      |
 
 ---
 
 ## 12. Variables de entorno
 
-| Variable | Fase | Descripción |
-| -------- | ---- | ----------- |
-| `DATABASE_URL` | 0 | Connection string Neon (pooler) |
-| `BETTER_AUTH_SECRET` | 1 | Secreto de firma de sesión |
-| `BETTER_AUTH_URL` | 1 | URL base de la app (ej. `https://smartmenu.vercel.app`) |
-| `NODE_ENV` | 0 | `development` \| `production` |
-| `ALLOWED_ORIGINS` | 1 | Orígenes CORS separados por coma |
-| `BLOB_READ_WRITE_TOKEN` | 2 | Vercel Blob para QR |
-| `PUBLIC_APP_URL` | 2 | URL canónica para links y QR |
-| `ANALYTICS_SALT` | 3 | Hash anónimo de visitantes (opcional) |
+| Variable                | Fase | Descripción                                             |
+| ----------------------- | ---- | ------------------------------------------------------- |
+| `DATABASE_URL`          | 0    | Connection string Neon (pooler)                         |
+| `BETTER_AUTH_SECRET`    | 1    | Secreto de firma de sesión                              |
+| `BETTER_AUTH_URL`       | 1    | URL base de la app (ej. `https://smartmenu.vercel.app`) |
+| `NODE_ENV`              | 0    | `development` \| `production`                           |
+| `ALLOWED_ORIGINS`       | 1    | Orígenes CORS separados por coma                        |
+| `BLOB_READ_WRITE_TOKEN` | 2    | Vercel Blob para QR                                     |
+| `PUBLIC_APP_URL`        | 2    | URL canónica para links y QR                            |
+| `ANALYTICS_SALT`        | 3    | Hash anónimo de visitantes (opcional)                   |
 
 Archivo `.env.example` debe commitearse; `.env` en `.gitignore`.
 
@@ -1007,32 +1013,32 @@ Archivo `.env.example` debe commitearse; `.env` en `.gitignore`.
 
 ### Rendimiento
 
-| Objetivo | Acción |
-| -------- | ------ |
-| Menú público rápido | Query única con `include` anidado; índices en slugs |
-| Serverless cold start | Prisma client singleton; connection pooling Neon |
-| Payload compacto | No sobre-incluir relaciones en listados admin |
+| Objetivo              | Acción                                              |
+| --------------------- | --------------------------------------------------- |
+| Menú público rápido   | Query única con `include` anidado; índices en slugs |
+| Serverless cold start | Prisma client singleton; connection pooling Neon    |
+| Payload compacto      | No sobre-incluir relaciones en listados admin       |
 
 ### Seguridad
 
-| Requisito | Fase |
-| --------- | ---- |
-| Validación Zod | 1 |
-| Sanitización strings | 1 |
-| RBAC | 1 |
-| Rate limiting | 1 |
-| CSRF (cookies) | 1 |
-| Password hashing | 1 (Better Auth) |
-| `customCss` sanitizado | 2 |
-| Admin audit log | 3 |
+| Requisito              | Fase            |
+| ---------------------- | --------------- |
+| Validación Zod         | 1               |
+| Sanitización strings   | 1               |
+| RBAC                   | 1               |
+| Rate limiting          | 1               |
+| CSRF (cookies)         | 1               |
+| Password hashing       | 1 (Better Auth) |
+| `customCss` sanitizado | 2               |
+| Admin audit log        | 3               |
 
 ### Observabilidad
 
-| Requisito | Implementación |
-| --------- | -------------- |
-| Logs estructurados | JSON con `requestId`, `userId`, `path`, `duration` |
-| Error tracking | Sentry o similar (Fase 1 tardía) |
-| Auditoría | Tabla `AuditLog` para delete restaurant, cambios masivos precios (Fase 1 opcional, Fase 3 completo) |
+| Requisito          | Implementación                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| Logs estructurados | JSON con `requestId`, `userId`, `path`, `duration`                                                  |
+| Error tracking     | Sentry o similar (Fase 1 tardía)                                                                    |
+| Auditoría          | Tabla `AuditLog` para delete restaurant, cambios masivos precios (Fase 1 opcional, Fase 3 completo) |
 
 **AuditLog (recomendado Fase 1):**
 
@@ -1080,13 +1086,13 @@ Los tests E2E (Playwright), Lighthouse CI y axe-core se definen en el PRD; el ba
 
 ### Stack
 
-| Herramienta | Uso en backend |
-| ----------- | -------------- |
-| **Vitest** | Runner; `vitest.config.ts` en raíz del monorepo |
-| **@vitest/coverage-v8** _(opcional)_ | Cobertura en servicios y middleware |
-| **Hono `app.request()`** | Tests de rutas sin servidor |
-| **Prisma** | `beforeEach` / transacciones o reset de DB de test |
-| **Bruno / Insomnia** | Exploración manual; colección en `docs/api/` |
+| Herramienta                          | Uso en backend                                     |
+| ------------------------------------ | -------------------------------------------------- |
+| **Vitest**                           | Runner; `vitest.config.ts` en raíz del monorepo    |
+| **@vitest/coverage-v8** _(opcional)_ | Cobertura en servicios y middleware                |
+| **Hono `app.request()`**             | Tests de rutas sin servidor                        |
+| **Prisma**                           | `beforeEach` / transacciones o reset de DB de test |
+| **Bruno / Insomnia**                 | Exploración manual; colección en `docs/api/`       |
 
 ### Estructura de carpetas
 
@@ -1110,26 +1116,26 @@ Convención de nombres: `*.test.ts` o `*.spec.ts` junto al módulo o en `__tests
 
 #### Unitarios (Vitest)
 
-| Módulo | Casos |
-| ------ | ----- |
-| `slugify` / generación de slugs | Unicidad, normalización, caracteres especiales |
-| `bulk-pricing` | Incremento %, incremento fijo, redondeo a 2 decimales, alcance por menú/categoría |
-| Schemas Zod | Payloads válidos/inválidos por entidad |
-| RBAC helpers | `canEditItem`, `canManageMembers`, `canPatchTheme` según rol |
+| Módulo                          | Casos                                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------- |
+| `slugify` / generación de slugs | Unicidad, normalización, caracteres especiales                                    |
+| `bulk-pricing`                  | Incremento %, incremento fijo, redondeo a 2 decimales, alcance por menú/categoría |
+| Schemas Zod                     | Payloads válidos/inválidos por entidad                                            |
+| RBAC helpers                    | `canEditItem`, `canManageMembers`, `canPatchTheme` según rol                      |
 
 #### Integración API (Vitest + `app.request()`)
 
-| Grupo | Casos mínimos |
-| ----- | ------------- |
-| **Health** | `GET /api/health` → 200 |
-| **Auth** | Registro, login, sesión en cookie, 401 sin sesión |
-| **Restaurants** | CRUD; 409 segundo restaurante en MVP; solo Owner elimina |
-| **Menus** | CRUD; publicar/despublicar; slug único por restaurante |
-| **Categories** | CRUD; reorder; cascade al eliminar |
-| **Items** | CRUD; `isAvailable` / `isFeatured`; bulk pricing |
-| **Themes** | GET/PATCH; Staff → 403 en PATCH |
-| **Public** | Menú publicado → 200 con estructura anidada; no publicado → 404; items no disponibles ocultos |
-| **Members** | Owner invita Staff; Staff no gestiona miembros |
+| Grupo           | Casos mínimos                                                                                 |
+| --------------- | --------------------------------------------------------------------------------------------- |
+| **Health**      | `GET /api/health` → 200                                                                       |
+| **Auth**        | Registro, login, sesión en cookie, 401 sin sesión                                             |
+| **Restaurants** | CRUD; 409 segundo restaurante en MVP; solo Owner elimina                                      |
+| **Menus**       | CRUD; publicar/despublicar; slug único por restaurante                                        |
+| **Categories**  | CRUD; reorder; cascade al eliminar                                                            |
+| **Items**       | CRUD; `isAvailable` / `isFeatured`; bulk pricing                                              |
+| **Themes**      | GET/PATCH; Staff → 403 en PATCH                                                               |
+| **Public**      | Menú publicado → 200 con estructura anidada; no publicado → 404; items no disponibles ocultos |
+| **Members**     | Owner invita Staff; Staff no gestiona miembros                                                |
 
 #### Patrón de test de integración (referencia)
 
@@ -1147,7 +1153,10 @@ describe("POST /api/items", () => {
   it("crea item con sesión Staff", async () => {
     const res = await app.request("/api/items", {
       method: "POST",
-      headers: { cookie: staffSessionCookie, "content-type": "application/json" },
+      headers: {
+        cookie: staffSessionCookie,
+        "content-type": "application/json",
+      },
       body: JSON.stringify({ name: "Pizza", price: 12.5, categoryId: "..." }),
     });
     expect(res.status).toBe(201);
@@ -1159,24 +1168,24 @@ describe("POST /api/items", () => {
 
 #### Helpers de test (`src/test/` o `tests/`)
 
-| Helper | Responsabilidad |
-| ------ | --------------- |
-| `resetTestDb()` | Truncar tablas o migrar DB limpia |
-| `seedTestData()` | Owner, Staff, restaurante, menú publicado |
-| `loginAs(role)` | Obtener cookie de sesión para `app.request()` |
-| `createTestApp()` | Instancia Hono con middleware de test |
+| Helper            | Responsabilidad                               |
+| ----------------- | --------------------------------------------- |
+| `resetTestDb()`   | Truncar tablas o migrar DB limpia             |
+| `seedTestData()`  | Owner, Staff, restaurante, menú publicado     |
+| `loginAs(role)`   | Obtener cookie de sesión para `app.request()` |
+| `createTestApp()` | Instancia Hono con middleware de test         |
 
 Variables: `DATABASE_URL` apuntando a Neon branch de test o Postgres local (`smartmenu_test`).
 
 ### Fase 2+
 
-| Área | Enfoque |
-| ---- | ------- |
-| QR | Mock de Vercel Blob; verificar URL generada |
-| Theme presets | Validación `customCss` (longitud, sin `@import` remoto) |
-| Reorder árbol | Transacción atómica; orden consistente |
-| Analytics | Agregación con datos seed; fechas mockeadas |
-| Promotions (Fase 4) | `PromotionEngine` con `vi.useFakeTimers()` |
+| Área                | Enfoque                                                 |
+| ------------------- | ------------------------------------------------------- |
+| QR                  | Mock de Vercel Blob; verificar URL generada             |
+| Theme presets       | Validación `customCss` (longitud, sin `@import` remoto) |
+| Reorder árbol       | Transacción atómica; orden consistente                  |
+| Analytics           | Agregación con datos seed; fechas mockeadas             |
+| Promotions (Fase 4) | `PromotionEngine` con `vi.useFakeTimers()`              |
 
 ### Datos de prueba
 
@@ -1206,14 +1215,12 @@ Script `prisma/seed.ts` (desarrollo y base para seeds de test):
 
 ### Fase 1 (mínimo)
 
-| Paso | Acción |
-| ---- | ------ |
-| Vercel | Proyecto vinculado al repo |
-| Env | `DATABASE_URL`, `BETTER_AUTH_*` en Preview y Production |
-| Build | `prisma generate && astro build` |
+| Paso    | Acción                                                           |
+| ------- | ---------------------------------------------------------------- |
+| Vercel  | Proyecto vinculado al repo                                       |
+| Env     | `DATABASE_URL`, `BETTER_AUTH_*` en Preview y Production          |
+| Build   | `prisma generate && astro build`                                 |
 | Migrate | `prisma migrate deploy` en hook de deploy o GitHub Action manual |
-
-### Fase futura (GitHub Actions)
 
 ```yaml
 # .github/workflows/ci.yml (referencia)
@@ -1239,33 +1246,33 @@ jobs:
       - run: pnpm lhci
 ```
 
-| Job | Herramienta | Bloquea merge |
-| --- | ----------- | ------------- |
-| Unit + integración API | Vitest | Sí |
-| Build | Astro + Prisma generate | Sí |
-| E2E | Playwright | Sí (MVP) |
-| Rendimiento | Lighthouse CI | Sí (score > 90) |
-| A11y E2E | axe-core (Playwright) | Advertencia en MVP; obligatorio post-MVP |
+| Job                    | Herramienta             | Bloquea merge                            |
+| ---------------------- | ----------------------- | ---------------------------------------- |
+| Unit + integración API | Vitest                  | Sí                                       |
+| Build                  | Astro + Prisma generate | Sí                                       |
+| E2E                    | Playwright              | Sí (MVP)                                 |
+| Rendimiento            | Lighthouse CI           | Sí (score > 90)                          |
+| A11y E2E               | axe-core (Playwright)   | Advertencia en MVP; obligatorio post-MVP |
 
 ### Entornos
 
-| Entorno | Base de datos | Deploy |
-| ------- | ------------- | ------ |
-| Development | Neon branch dev | Local `pnpm dev` |
-| Staging | Neon branch staging | Vercel Preview |
-| Production | Neon main | Vercel Production |
+| Entorno     | Base de datos       | Deploy            |
+| ----------- | ------------------- | ----------------- |
+| Development | Neon branch dev     | Local `pnpm dev`  |
+| Staging     | Neon branch staging | Vercel Preview    |
+| Production  | Neon main           | Vercel Production |
 
 ---
 
 ## 16. Criterios de aceptación por fase
 
-| Fase | Listo cuando… |
-| ---- | ------------- |
-| **0** | Health check OK, schema migrado, Hono montado en Astro |
+| Fase  | Listo cuando…                                                                                       |
+| ----- | --------------------------------------------------------------------------------------------------- |
+| **0** | Health check OK, schema migrado, Hono montado en Astro                                              |
 | **1** | Todos los criterios PRD sección 19 cumplidos en backend; checklist sección 6.12; tests §14 en verde |
-| **2** | QR, presets y reorder árbol operativos |
-| **3** | Multi-restaurante + Super Admin + analytics end-to-end |
-| **4** | i18n + sucursales + promociones en menú público |
+| **2** | QR, presets y reorder árbol operativos                                                              |
+| **3** | Multi-restaurante + Super Admin + analytics end-to-end                                              |
+| **4** | i18n + sucursales + promociones en menú público                                                     |
 
 ---
 
@@ -1293,14 +1300,14 @@ flowchart LR
 
 ## 18. Riesgos y mitigaciones
 
-| Riesgo | Impacto | Mitigación |
-| ------ | ------- | ---------- |
-| Cold starts + Prisma en Vercel | Latencia alta | Neon pooler; edge no recomendado para Prisma |
-| Better Auth + Astro SSR | Integración compleja | Seguir guía oficial; un solo entry `/api/[...path]` |
-| Límite 1 restaurante hardcodeado | Refactor en Fase 3 | Abstraer `getActiveRestaurant(userId)` desde Fase 1 |
-| Cambios masivos de precios | Errores de redondeo | Usar `Decimal` Prisma; tests unitarios |
-| Analytics sin consentimiento | Legal | Eventos anónimos; documentar en política de privacidad |
-| `customCss` en temas | XSS en menú público | Sanitizar o prohibir en MVP Fase 2 |
+| Riesgo                           | Impacto              | Mitigación                                             |
+| -------------------------------- | -------------------- | ------------------------------------------------------ |
+| Cold starts + Prisma en Vercel   | Latencia alta        | Neon pooler; edge no recomendado para Prisma           |
+| Better Auth + Astro SSR          | Integración compleja | Seguir guía oficial; un solo entry `/api/[...path]`    |
+| Límite 1 restaurante hardcodeado | Refactor en Fase 3   | Abstraer `getActiveRestaurant(userId)` desde Fase 1    |
+| Cambios masivos de precios       | Errores de redondeo  | Usar `Decimal` Prisma; tests unitarios                 |
+| Analytics sin consentimiento     | Legal                | Eventos anónimos; documentar en política de privacidad |
+| `customCss` en temas             | XSS en menú público  | Sanitizar o prohibir en MVP Fase 2                     |
 
 ---
 
@@ -1324,44 +1331,3 @@ flowchart LR
   }
 }
 ```
-
-### Dependencias de desarrollo (testing)
-
-```bash
-pnpm add -D vitest @vitest/coverage-v8 @testing-library/react @testing-library/user-event \
-  @playwright/test @lhci/cli @axe-core/playwright
-```
-
-## Apéndice B — Códigos HTTP estándar
-
-| Código | Uso |
-| ------ | --- |
-| 200 | Lectura/actualización exitosa |
-| 201 | Creación exitosa |
-| 400 | Validación Zod fallida |
-| 401 | Sin sesión |
-| 403 | Sin permiso RBAC |
-| 404 | Recurso no encontrado |
-| 409 | Conflicto (slug duplicado, segundo restaurante en MVP) |
-| 429 | Rate limit excedido |
-| 500 | Error interno (log + mensaje genérico) |
-
-## Apéndice C — Referencia cruzada PRD
-
-| PRD | Documento backend |
-| --- | ----------------- |
-| §7 Autenticación | Fase 1 §6.2 |
-| §8 Modelo de datos | Fase 0 §5.2.1, extensiones Fase 2–4 |
-| §10 API Design | §11 Catálogo de endpoints |
-| §11 Convenciones API | §3 Principios, Apéndice B |
-| §12 MVP | Fase 1 completa |
-| §13 Fase 2 | Fase 2 |
-| §14 Fase 3 | Fase 3 |
-| §15 Fase 4 | Fase 4 |
-| §16 No funcional | §13 |
-| §18 Estrategia de testing | §14, §15 |
-| §19 Criterios producción | §16 |
-
----
-
-*Documento generado a partir del PRD SmartMenu v1.3. Actualizar este plan cuando cambien decisiones de arquitectura o alcance.*
