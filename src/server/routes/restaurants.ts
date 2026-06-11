@@ -7,6 +7,7 @@ import {
   createRestaurantSchema,
   updateRestaurantSchema,
 } from "../schemas/restaurant";
+import { memberRoutes } from "./members";
 import {
   createRestaurant,
   deleteRestaurant,
@@ -39,6 +40,18 @@ restaurantRoutes.post("/", async (c) => {
   const restaurant = await createRestaurant(c.get("userId")!, parsed.data);
   return ok(c, restaurant, 201);
 });
+
+restaurantRoutes.use(
+  "/:id/members",
+  loadRestaurantMember,
+  requireRole("OWNER"),
+);
+restaurantRoutes.use(
+  "/:id/members/*",
+  loadRestaurantMember,
+  requireRole("OWNER"),
+);
+restaurantRoutes.route("/:id/members", memberRoutes);
 
 restaurantRoutes.get("/:id", loadRestaurantMember, async (c) => {
   const restaurant = await getRestaurantForMember(

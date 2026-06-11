@@ -3,7 +3,7 @@
 | Campo      | Valor                                              |
 | ---------- | -------------------------------------------------- |
 | Versión    | 1.0                                                |
-| Alcance    | Fase 0 + Fase 1 parcial (auth, restaurantes, menús, categorías, productos) |
+| Alcance    | Fase 0 + Fase 1 (auth, restaurantes, miembros, menús, categorías, productos, temas, menú público) |
 | Referencia | [BACKEND-IMPLEMENTATION.md](./BACKEND-IMPLEMENTATION.md) |
 | Base URL   | `/api` (mismo origen que la app Astro)             |
 
@@ -14,9 +14,7 @@
 | Fase | Estado   | Grupos documentados                          |
 | ---- | -------- | -------------------------------------------- |
 | 0    | Completa | Health check                                 |
-| 1    | Parcial  | Auth (Better Auth), Restaurantes, Menús, Categorías, Productos |
-
-**Pendiente en Fase 1:** temas, menú público y miembros.
+| 1    | Completa | Auth (Better Auth), Restaurantes, Miembros, Menús, Categorías, Productos, Temas, Menú público |
 
 ---
 
@@ -62,7 +60,7 @@ En MVP un usuario pertenece a **un solo** restaurante.
 | `403`  | Sin permiso (rol insuficiente)                   |
 | `404`  | Recurso no encontrado o sin acceso               |
 | `409`  | Conflicto (p. ej. slug duplicado, ya tiene restaurante) |
-| `429`  | Rate limit (auth)                                |
+| `429`  | Rate limit (auth o menú público)                 |
 
 ---
 
@@ -305,6 +303,95 @@ Elimina el restaurante y todos sus datos en cascada (menús, categorías, produc
 ```
 
 **Errores:** `403` si es `STAFF`.
+
+---
+
+## Miembros
+
+Rutas anidadas bajo restaurante. **Solo `OWNER`** puede gestionar miembros (`403` para `STAFF`).
+
+### Objeto `Member` (respuesta)
+
+| Campo       | Tipo     | Descripción                    |
+| ----------- | -------- | ------------------------------ |
+| `userId`    | `string` | ID del usuario                 |
+| `name`      | `string` | Nombre del usuario             |
+| `email`     | `string` | Email del usuario              |
+| `role`      | `string` | `OWNER` o `STAFF`              |
+| `createdAt` | `string` | ISO 8601                       |
+| `updatedAt` | `string` | ISO 8601                       |
+
+### `GET /api/restaurants/:id/members`
+
+Lista los miembros del restaurante ordenados por fecha de alta.
+
+**Auth:** solo `OWNER`.
+
+**Respuesta `200`:** array de `Member`.
+
+**Errores:** `401` sin sesión, `403` si es `STAFF`, `404` si no es miembro del restaurante.
+
+---
+
+### `POST /api/restaurants/:id/members`
+
+Invita a un usuario existente como `STAFF` por email.
+
+**Auth:** solo `OWNER`.
+
+**Body:**
+
+| Campo   | Tipo     | Requerido | Descripción              |
+| ------- | -------- | --------- | ------------------------ |
+| `email` | `string` | Sí        | Email de usuario registrado |
+
+**Respuesta `201`:** objeto `Member` con `role: "STAFF"`.
+
+**Errores:**
+
+| Código | Mensaje                                      | Cuándo                              |
+| ------ | -------------------------------------------- | ----------------------------------- |
+| `404`  | `User not found`                             | Email no registrado                 |
+| `409`  | `User is already a member of this restaurant` | Ya es miembro de este restaurante |
+| `409`  | `User already belongs to a restaurant`       | Ya pertenece a otro restaurante   |
+| `400`  | Mensaje de validación Zod                    | Email inválido                      |
+| `403`  | `Forbidden`                                  | Usuario `STAFF`                     |
+
+> MVP: no envía email de invitación; el usuario debe registrarse antes.
+
+---
+
+### `PATCH /api/restaurants/:id/members/:userId`
+
+Actualiza el rol de un miembro `STAFF`.
+
+**Auth:** solo `OWNER`.
+
+**Body:**
+
+| Campo  | Tipo     | Requerido | Descripción        |
+| ------ | -------- | --------- | ------------------ |
+| `role` | `string` | Sí        | Solo `"STAFF"` en MVP |
+
+**Respuesta `200`:** objeto `Member` actualizado.
+
+**Errores:** `400` si el miembro es `OWNER`, `403` si es `STAFF`, `404` si el miembro no existe.
+
+---
+
+### `DELETE /api/restaurants/:id/members/:userId`
+
+Elimina el vínculo de un miembro `STAFF`.
+
+**Auth:** solo `OWNER`.
+
+**Respuesta `200`:**
+
+```json
+{ "success": true, "data": { "deleted": true } }
+```
+
+**Errores:** `400` si el miembro es `OWNER` (`Cannot remove restaurant owner`), `403` si es `STAFF`, `404` si no existe.
 
 ---
 
@@ -723,6 +810,194 @@ El precio resultante se redondea a 2 decimales y no baja de 0.
 
 ---
 
+## Temas
+
+Un tema por restaurante (relación 1:1). Se crea automáticamente al registrar el restaurante con valores por defecto (ver `POST /api/restaurants`).
+
+### Objeto `Theme`
+
+| Campo             | Tipo     | Descripción                          |
+| ----------------- | -------- | ------------------------------------ |
+| `id`              | `string` | ID del tema                          |
+| `restaurantId`    | `string` | ID del restaurante                   |
+| `primaryColor`    | `string` | Color principal (hex)                |
+| `secondaryColor`  | `string` | Color secundario (hex)               |
+| `backgroundColor` | `string` | Fondo (hex)                          |
+| `textColor`       | `string` | Texto (hex)                          |
+| `accentColor`     | `string` | Acento (hex)                         |
+| `fontFamily`      | `string` | Familia tipográfica CSS              |
+| `createdAt`       | `string` | ISO 8601                             |
+| `updatedAt`       | `string` | ISO 8601                             |
+
+### Presets disponibles (`apply-preset`)
+
+| ID        | Descripción breve              |
+| --------- | ------------------------------ |
+| `classic` | Verde esmeralda, fondo claro   |
+| `dark`    | Fondo oscuro, acentos violeta  |
+| `warm`    | Tonos cálidos, serif           |
+| `minimal` | Blanco y negro, sans-serif     |
+
+---
+
+### `GET /api/themes/:restaurantId`
+
+Obtiene el tema del restaurante.
+
+**Auth:** miembro del restaurante (`OWNER` o `STAFF`).
+
+**Parámetro URL:**
+
+| Parámetro      | Descripción        |
+| -------------- | ------------------ |
+| `restaurantId` | ID del restaurante |
+
+**Respuesta `200`:** objeto `Theme`.
+
+**Errores:** `401` sin sesión, `404` si no es miembro o no existe el tema.
+
+---
+
+### `PATCH /api/themes/:restaurantId`
+
+Actualiza colores y tipografía del tema.
+
+**Auth:** solo `OWNER`.
+
+**Body** (al menos un campo):
+
+| Campo             | Tipo     | Descripción                              |
+| ----------------- | -------- | ---------------------------------------- |
+| `primaryColor`    | `string` | Hex `#RGB` o `#RRGGBB`                   |
+| `secondaryColor`  | `string` | Hex `#RGB` o `#RRGGBB`                   |
+| `backgroundColor` | `string` | Hex `#RGB` o `#RRGGBB`                   |
+| `textColor`       | `string` | Hex `#RGB` o `#RRGGBB`                   |
+| `accentColor`     | `string` | Hex `#RGB` o `#RRGGBB`                   |
+| `fontFamily`      | `string` | 1–200 caracteres                         |
+
+**Respuesta `200`:** objeto `Theme` actualizado.
+
+**Errores:** `403` si es `STAFF`, `404` si no es miembro, `400` si el body es inválido.
+
+---
+
+### `POST /api/themes/:restaurantId/apply-preset`
+
+Aplica un preset predefinido, sobrescribiendo todos los campos del tema.
+
+**Auth:** solo `OWNER`.
+
+**Body:**
+
+| Campo    | Tipo     | Requerido | Descripción                                      |
+| -------- | -------- | --------- | ------------------------------------------------ |
+| `preset` | `string` | Sí        | `"classic"` \| `"dark"` \| `"warm"` \| `"minimal"` |
+
+**Respuesta `200`:** objeto `Theme` con la paleta del preset.
+
+**Errores:** `403` si es `STAFF`, `404` si no es miembro, `400` si el preset es inválido.
+
+---
+
+## Menú público
+
+Endpoint sin autenticación para renderizar la carta pública del restaurante.
+
+### `GET /api/public/menu/:restaurantSlug/:menuSlug`
+
+Devuelve restaurante, menú, tema y catálogo publicado.
+
+**Auth:** ninguna.
+
+**Parámetros URL:**
+
+| Parámetro        | Descripción                          |
+| ---------------- | ------------------------------------ |
+| `restaurantSlug` | Slug único del restaurante           |
+| `menuSlug`       | Slug del menú dentro del restaurante |
+
+**Condiciones de visibilidad:**
+
+- Restaurante con `isActive === true`.
+- Menú con `isPublished === true`.
+- Si no se cumplen, respuesta `404`.
+
+**Cabeceras de respuesta:**
+
+| Cabecera         | Valor                                              |
+| ---------------- | -------------------------------------------------- |
+| `Cache-Control`  | `public, s-maxage=60, stale-while-revalidate=300` |
+
+**Respuesta `200`:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "restaurant": {
+      "name": "Mi Restaurante",
+      "slug": "mi-restaurante",
+      "description": "Cocina de autor"
+    },
+    "menu": {
+      "name": "Carta principal",
+      "slug": "principal"
+    },
+    "theme": {
+      "primaryColor": "#10b981",
+      "secondaryColor": "#64748b",
+      "backgroundColor": "#f8fafc",
+      "textColor": "#0f172a",
+      "accentColor": "#dc2626",
+      "fontFamily": "'Inter', system-ui, sans-serif"
+    },
+    "categories": [
+      {
+        "id": "clx...",
+        "name": "Entrantes",
+        "order": 0,
+        "items": [
+          {
+            "id": "clx...",
+            "name": "Ensalada",
+            "description": "",
+            "price": "8.50",
+            "isAvailable": true,
+            "isFeatured": false,
+            "allergens": ["gluten"],
+            "order": 0
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Reglas del payload:**
+
+| Campo / regla | Comportamiento |
+| ------------- | -------------- |
+| `price`       | String con 2 decimales (ej. `"12.50"`) |
+| Items         | Solo productos con `isAvailable: true` |
+| Categorías    | Ordenadas por `order`; se omiten las que quedan sin items visibles |
+| Items         | Ordenados por `order` dentro de cada categoría |
+| Tema          | Colores y `fontFamily` sin `id` ni `restaurantId` |
+| Datos internos | No se exponen `userId`, emails, `restaurantId`, `menuId`, `isPublished`, `isActive` |
+
+**Errores:** `404` si el restaurante o menú no son accesibles públicamente; `429` si se supera el rate limit (100 req/60 s por IP).
+
+**Ejemplo (fetch):**
+
+```ts
+const res = await fetch(
+  `/api/public/menu/${restaurantSlug}/${menuSlug}`,
+);
+const { success, data } = await res.json();
+```
+
+---
+
 ## Flujo recomendado para el frontend
 
 ```text
@@ -740,16 +1015,13 @@ El precio resultante se redondea a 2 decimales y no baja de 0.
 12. POST /api/items              →  crear producto
 13. PATCH /api/items/reorder     →  reordenar productos tras drag-and-drop
 14. POST /api/items/bulk-pricing →  ajuste masivo de precios (opcional)
+15. GET  /api/themes/:restaurantId →  cargar tema del restaurante
+16. PATCH /api/themes/:restaurantId →  personalizar colores (solo Owner)
+17. POST /api/themes/:restaurantId/apply-preset →  aplicar preset (solo Owner)
+18. GET/POST/PATCH/DELETE /api/restaurants/:id/members →  gestionar staff (solo Owner)
+19. GET  /api/public/menu/:restaurantSlug/:menuSlug →  carta pública (sin auth)
 ```
 
 ---
 
-## Próximos endpoints (Fase 1 — no disponibles aún)
-
-| Grupo       | Rutas principales                                              |
-| ----------- | -------------------------------------------------------------- |
-| Temas       | `GET/PATCH /api/themes/:restaurantId`                          |
-| Público     | `GET /api/public/menu/:restaurantSlug/:menuSlug`               |
-| Miembros    | `GET/POST /api/restaurants/:id/members`                        |
-
-Detalle completo en [BACKEND-IMPLEMENTATION.md §6](./BACKEND-IMPLEMENTATION.md#6-fase-1--mvp-backend).
+Detalle de implementación en [BACKEND-IMPLEMENTATION.md §6](./BACKEND-IMPLEMENTATION.md#6-fase-1--mvp-backend).

@@ -26,6 +26,9 @@ export const loadRestaurantMember: MiddlewareHandler<AppEnv> = async (c, next) =
   await next();
 };
 
+/** Alias aligned with BACKEND-IMPLEMENTATION §6.10 naming. */
+export const requireRestaurantMember = loadRestaurantMember;
+
 export function requireRole(...roles: RestaurantRole[]): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const role = c.get("restaurantRole");
@@ -101,6 +104,28 @@ export const loadCategoryMember: MiddlewareHandler<AppEnv> = async (c, next) => 
   }
 
   c.set("restaurantId", category.menu.restaurantId);
+  c.set("restaurantRole", membership.role);
+  await next();
+};
+
+export const loadThemeMember: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const userId = c.get("userId");
+  if (!userId) {
+    return fail(c, "Unauthorized", 401);
+  }
+
+  const restaurantId = c.req.param("restaurantId");
+  const membership = await prisma.userRestaurant.findUnique({
+    where: {
+      userId_restaurantId: { userId, restaurantId },
+    },
+  });
+
+  if (!membership) {
+    return fail(c, "Not Found", 404);
+  }
+
+  c.set("restaurantId", restaurantId);
   c.set("restaurantRole", membership.role);
   await next();
 };

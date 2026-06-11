@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
+import { structuredLogger } from "./middleware/structured-logger";
 import { isAppError } from "./lib/errors";
 import { getAllowedOrigins } from "./lib/env";
 import { fail, ok } from "./lib/response";
@@ -10,13 +10,15 @@ import { categoryRoutes } from "./routes/categories";
 import { itemRoutes } from "./routes/items";
 import { menuRoutes } from "./routes/menus";
 import { restaurantRoutes } from "./routes/restaurants";
+import { publicRoutes } from "./routes/public";
+import { themeRoutes } from "./routes/themes";
 import type { AppEnv } from "./types";
 
 export type { AppEnv } from "./types";
 
 export const app = new Hono<AppEnv>().basePath("/api");
 
-app.use("*", logger());
+app.use("*", structuredLogger);
 app.use(
   "*",
   cors({
@@ -45,6 +47,8 @@ app.route("/restaurants", restaurantRoutes);
 app.route("/menus", menuRoutes);
 app.route("/categories", categoryRoutes);
 app.route("/items", itemRoutes);
+app.route("/themes", themeRoutes);
+app.route("/public", publicRoutes);
 
 app.get("/health", (c) => ok(c, { status: "ok" }));
 

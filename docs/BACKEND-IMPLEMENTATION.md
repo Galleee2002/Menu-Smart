@@ -65,7 +65,9 @@ Actualizado tras cierre de **Fase 0** (2026-06-10):
 | `.env.example`           | Documentado (incluye `DATABASE_URL_TEST`)                              |
 | Better Auth              | Operativo en `/api/auth/*`; `requireAuth` y rate limit auth (§6.2)     |
 | Restaurantes             | CRUD completo en `/api/restaurants/*`; RBAC base Owner/Staff (§6.3)    |
-| Zod / validación         | Schemas restaurante; resto de dominio pendiente (Fase 1)               |
+| Miembros                 | CRUD en `/api/restaurants/:id/members/*`; solo Owner (§6.9)              |
+| Middleware seguridad MVP | Rate limit público, logging estructurado, RBAC completo (§6.10)        |
+| Zod / validación         | Schemas por entidad de dominio Fase 1                                    |
 
 **Punto de partida:** Fase 1 — MVP (Backend).
 
@@ -402,7 +404,7 @@ Configurada el **2026-06-10** para aislar pruebas de integración de la base de 
 - [x] CRUD de menús con publicar/despublicar.
 - [x] CRUD de categorías con reordenamiento.
 - [x] CRUD de productos (`MenuItem`) con disponibilidad y destacados.
-- [ ] Gestión de temas (lectura y actualización).
+- [x] Gestión de temas (lectura y actualización).
 - [ ] Endpoint público de menú por slugs.
 - [x] Cambios masivos de precios (porcentual y fijo).
 - [ ] Middleware RBAC (Owner / Staff).
@@ -832,6 +834,43 @@ curl -b cookies.txt -X DELETE http://localhost:4321/api/items/{id}
 
 - `classic`, `dark`, `warm`, `minimal` — cada uno con paleta y `fontFamily`.
 
+#### 6.7.1 Implementación completada
+
+**Fecha de cierre:** 2026-06-11.
+
+| Archivo | Rol |
+| ------- | --- |
+| `src/server/routes/themes.ts` | `GET/PATCH /api/themes/:restaurantId`, `POST .../apply-preset` |
+| `src/server/services/theme.ts` | Lectura con membresía, actualización parcial y aplicación de preset |
+| `src/server/schemas/theme.ts` | `updateThemeSchema`, `applyThemePresetSchema` (Zod) |
+| `src/server/lib/theme-presets.ts` | Presets `classic`, `dark`, `warm`, `minimal` |
+| `src/server/middleware/rbac.ts` | `loadThemeMember` (resuelve `restaurantId` → rol) |
+| `src/server/index.ts` | Montaje `app.route("/themes", themeRoutes)` |
+| `src/server/__tests__/themes.test.ts` | Integración: GET/PATCH/apply-preset, 401/403/404/400, Owner/Staff |
+
+**Decisiones:**
+
+- **Relación 1:1:** el tema se crea al registrar el restaurante (`DEFAULT_THEME` en `theme-defaults.ts`); `GET` devuelve 404 si no existe o el usuario no es miembro.
+- **RBAC:** `GET` requiere membresía (`OWNER` o `STAFF`); `PATCH` y `apply-preset` solo `OWNER`.
+- **Validación:** colores en formato hex (`#RGB` o `#RRGGBB`); `fontFamily` 1–200 caracteres; al menos un campo en `PATCH`.
+- **Presets:** constantes en servidor; `POST apply-preset` con `{ "preset": "classic" | "dark" | "warm" | "minimal" }` sobrescribe todos los campos del tema.
+- **Envelope:** respuestas usan `{ success, data }` del PRD.
+
+**Verificación manual:**
+
+```bash
+# Tras login y restaurante (cookies.txt de §6.2–6.3)
+curl -b cookies.txt http://localhost:4321/api/themes/{restaurantId}
+
+curl -b cookies.txt -X PATCH http://localhost:4321/api/themes/{restaurantId} \
+  -H "Content-Type: application/json" \
+  -d '{"primaryColor":"#ff0000","fontFamily":"'\''Roboto'\'', sans-serif"}'
+
+curl -b cookies.txt -X POST http://localhost:4321/api/themes/{restaurantId}/apply-preset \
+  -H "Content-Type: application/json" \
+  -d '{"preset":"dark"}'
+```
+
 ### 6.8 Menú público
 
 #### Reglas de negocio
@@ -883,6 +922,37 @@ curl -b cookies.txt -X DELETE http://localhost:4321/api/items/{id}
 
 - Solo incluir items con `isAvailable: true` en público (o incluir todos con flag — **recomendación MVP:** ocultar no disponibles en público).
 
+#### 6.8.1 Implementación completada
+
+**Fecha de cierre:** 2026-06-11.
+
+| Archivo | Rol |
+| ------- | --- |
+| `src/server/routes/public.ts` | `GET /api/public/menu/:restaurantSlug/:menuSlug` |
+| `src/server/services/public-menu.ts` | Resolución por slugs, filtrado y DTO público |
+| `src/server/index.ts` | Montaje `app.route("/public", publicRoutes)` |
+| `src/server/__tests__/public-menu.test.ts` | Integración: 200 sin auth, 404, items no disponibles, orden, cache |
+
+**Decisiones:**
+
+- **Sin autenticación:** el endpoint es público; no usa `requireAuth`.
+- **Visibilidad:** `404` si el restaurante no existe, `isActive === false`, el menú no existe, o `isPublished === false`.
+- **Items:** solo se incluyen productos con `isAvailable: true`; categorías sin productos visibles se omiten.
+- **Tema:** se devuelven los 6 campos de color/tipografía sin `id` ni `restaurantId`; si falta tema en BD, se usa `DEFAULT_THEME`.
+- **Datos expuestos:** restaurante (`name`, `slug`, `description`), menú (`name`, `slug`), categorías e items ordenados por `order`; sin IDs internos de restaurante/menú ni datos de usuarios.
+- **Cache:** cabecera `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`.
+- **Envelope:** respuestas usan `{ success, data }` del PRD.
+
+**Verificación manual:**
+
+```bash
+# Sin cookies — menú publicado
+curl -i http://localhost:4321/api/public/menu/{restaurantSlug}/{menuSlug}
+
+# 404 si no publicado o restaurante inactivo
+curl -i http://localhost:4321/api/public/menu/test-restaurant/unpublished
+```
+
 ### 6.9 Gestión de usuarios (MVP limitado)
 
 El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
@@ -896,6 +966,45 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 
 > Invitación completa por email (Fase 2+). MVP: alta manual si el usuario ya está registrado.
 
+#### 6.9.1 Implementación completada
+
+**Fecha de cierre:** 2026-06-11.
+
+| Archivo | Rol |
+| ------- | --- |
+| `src/server/routes/members.ts` | Handlers `GET/POST/PATCH/DELETE` bajo `/:id/members` |
+| `src/server/routes/restaurants.ts` | Montaje anidado con `loadRestaurantMember` + `requireRole("OWNER")` |
+| `src/server/services/member.ts` | Listado, invitación, actualización de rol y eliminación |
+| `src/server/schemas/member.ts` | `inviteMemberSchema`, `updateMemberRoleSchema` (Zod) |
+| `src/server/middleware/rbac.ts` | Alias `requireRestaurantMember` (= `loadRestaurantMember`) |
+| `src/server/__tests__/members.test.ts` | Integración: CRUD, 401/403/404/409, Owner/Staff |
+
+**Decisiones:**
+
+- **Solo Owner:** los cuatro endpoints exigen rol `OWNER`; Staff recibe `403`.
+- **Invitación MVP:** `POST` con `{ email }` crea vínculo `STAFF` solo si el usuario ya existe (`404` si no).
+- **Límite 1 restaurante:** `409` si el usuario ya tiene membresía en cualquier restaurante.
+- **Owner inmutable:** no se puede cambiar el rol del Owner (`PATCH` → `400`) ni eliminarlo (`DELETE` → `400`).
+- **PATCH:** solo acepta `{ role: "STAFF" }` en MVP.
+- **Envelope:** respuestas usan `{ success, data }` del PRD.
+
+**Verificación manual:**
+
+```bash
+# Tras login como Owner (cookies.txt de §6.2)
+curl -b cookies.txt http://localhost:4321/api/restaurants/{id}/members
+
+curl -b cookies.txt -X POST http://localhost:4321/api/restaurants/{id}/members \
+  -H "Content-Type: application/json" \
+  -d '{"email":"staff@example.com"}'
+
+curl -b cookies.txt -X PATCH http://localhost:4321/api/restaurants/{id}/members/{userId} \
+  -H "Content-Type: application/json" \
+  -d '{"role":"STAFF"}'
+
+curl -b cookies.txt -X DELETE http://localhost:4321/api/restaurants/{id}/members/{userId}
+```
+
 ### 6.10 Middleware y seguridad (MVP)
 
 | Middleware                | Fase | Descripción                                            |
@@ -904,8 +1013,37 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 | `requireRestaurantMember` | 1    | Usuario en `UserRestaurant` del recurso                |
 | `requireRole(OWNER)`      | 1    | RBAC                                                   |
 | Validación Zod            | 1    | Body y query                                           |
-| Rate limiting básico      | 1    | Auth: Better Auth nativo (§6.2). Público: middleware Hono pendiente |
+| Rate limiting básico      | 1    | Auth: Better Auth nativo (§6.2). Público: middleware Hono (§6.10.1) |
 | CSRF                      | 1    | Better Auth + SameSite cookies                         |
+
+#### 6.10.1 Implementación completada
+
+**Fecha de cierre:** 2026-06-11.
+
+| Archivo | Rol |
+| ------- | --- |
+| `src/server/middleware/auth.ts` | `sessionMiddleware`, `requireAuth` |
+| `src/server/middleware/rbac.ts` | `loadRestaurantMember`, `requireRestaurantMember`, `requireRole`, loaders por recurso |
+| `src/server/middleware/rate-limit.ts` | Rate limit en memoria por IP para rutas públicas |
+| `src/server/middleware/structured-logger.ts` | Log JSON por línea (`timestamp`, `method`, `path`, `status`, `durationMs`) |
+| `src/server/routes/public.ts` | Aplica `publicRateLimit` en `GET /menu/...` |
+| `src/server/index.ts` | `structuredLogger` global (sustituye `hono/logger`) |
+| `src/server/__tests__/public-rate-limit.test.ts` | Integración: `429` tras superar límite por IP |
+
+**Rate limit público configurado:**
+
+| Alcance | Ventana | Máx. |
+| ------- | ------- | ---- |
+| `/api/public/*` | 60 s | 100 req/IP |
+
+Variables opcionales: `PUBLIC_RATE_LIMIT_MAX`, `PUBLIC_RATE_LIMIT_WINDOW_MS`.
+
+**Decisiones:**
+
+- **Store en memoria:** aceptable en MVP; no compartido entre instancias serverless (documentar para Fase 2+ con Redis si hace falta).
+- **Respuesta 429:** envelope `{ success: false, error: { message: "Too Many Requests" } }` + cabecera `Retry-After`.
+- **CSRF:** cookies `httpOnly` + `SameSite=Lax` vía Better Auth; sin token CSRF adicional en MVP.
+- **Validación Zod:** inline en handlers de rutas de escritura (patrón establecido en §6.3–6.9).
 
 ### 6.11 Tareas de implementación ordenadas
 
@@ -913,14 +1051,14 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 1. [x] Better Auth + tablas + rutas auth
 2. [x] Middleware auth + RBAC base (`loadRestaurantMember`, `requireRole`)
 3. [x] Restaurants (CRUD + límite 1 por usuario)
-4. Themes (default on create + GET/PATCH)
+4. [x] Themes (default on create + GET/PATCH + apply-preset)
 5. [x] Menus (CRUD + isPublished)
 6. Categories (CRUD + reorder)
 7. Items (CRUD + reorder)
 8. Bulk pricing
-9. Public menu endpoint
-10. Members (Owner)
-11. Rate limit público + logs estructurados (auth rate limit hecho en §6.2)
+9. [x] Public menu endpoint
+10. [x] Members (Owner)
+11. [x] Rate limit público + logs estructurados (auth rate limit hecho en §6.2)
 12. Seed dev + pruebas manuales/automáticas
 ```
 
@@ -931,9 +1069,11 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 - [x] Tests de integración API en verde: menús (§6.4).
 - [x] Tests de integración API en verde: categorías (§6.5).
 - [x] Tests de integración API en verde: ítems (§6.6).
-- [ ] Tests de integración API en verde: temas, menú público.
+- [x] Tests de integración API en verde: temas (§6.7).
+- [x] Tests de integración API en verde: menú público (§6.8).
 - [x] Staff bloqueado en PATCH/DELETE restaurante (§6.3).
-- [ ] Tests de autorización: Staff bloqueado en gestionar miembros y PATCH tema.
+- [x] Tests de autorización: Staff bloqueado en PATCH tema (§6.7).
+- [x] Tests de autorización: Staff bloqueado en gestionar miembros.
 - [x] Registro, login y logout funcionan con cookies.
 - [x] Usuario sin restaurante puede crear exactamente uno (§6.3).
 - [x] Segundo `POST /api/restaurants` devuelve 409 Conflict (§6.3).
@@ -941,8 +1081,8 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 - [x] CRUD categorías con autorización correcta (§6.5).
 - [x] CRUD productos con autorización correcta (§6.6).
 - [x] Staff no puede eliminar restaurante (§6.3).
-- [ ] Staff no puede gestionar miembros.
-- [ ] Menú público responde 404 si no publicado o restaurante inactivo.
+- [x] Staff no puede gestionar miembros.
+- [x] Menú público responde 404 si no publicado o restaurante inactivo (§6.8).
 - [x] Cambio masivo de precios actualiza todos los items del alcance (§6.6).
 - [ ] Todas las respuestas siguen el envelope del PRD.
 - [ ] Deploy en Vercel Preview con Neon staging operativo.
