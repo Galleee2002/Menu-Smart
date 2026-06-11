@@ -4,6 +4,9 @@ src/generated/
 # generated types
 .astro/
 
+# Vercel local build output (regenerated on deploy/build)
+.vercel/
+
 # dependencies
 node_modules/
 

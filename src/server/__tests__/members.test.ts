@@ -6,7 +6,6 @@ import {
   resetTestDb,
   seedAuthUser,
   seedTestData,
-  signInWith,
 } from "../../test/helpers";
 
 describe.sequential("Members API", () => {
