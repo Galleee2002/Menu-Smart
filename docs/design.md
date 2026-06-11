@@ -2,7 +2,7 @@
 
 Documentación de la primera versión visual del menú público de demostración en `/example`.
 
-Esta versión es **solo frontend**, con datos mock, sin backend ni panel admin.
+Esta versión es **solo frontend**, con datos mock, sin backend ni panel admin. **`/example` no requiere autenticación** — cualquier visitante puede verla.
 
 ---
 
@@ -10,7 +10,7 @@ Esta versión es **solo frontend**, con datos mock, sin backend ni panel admin.
 
 | Incluye | No incluye |
 | ------- | ---------- |
-| Ruta `/example` para presentaciones a clientes | Panel `/admin` |
+| Ruta `/example` para presentaciones a clientes (pública, sin login) | Panel `/admin` |
 | 3 presets visuales intercambiables | CRUD, API, auth |
 | Menú ficticio *Bella Napoli* | Imágenes de productos |
 | Scroll continuo por categorías | Alérgenos, productos destacados |

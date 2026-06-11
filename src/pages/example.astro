@@ -25,7 +25,7 @@ import '../styles/example-menu-themes.scss';
         var key = 'smartmenu-example-theme';
         var stored = localStorage.getItem(key);
         var valid = ['minimal-clean', 'warm-natural', 'bold-night'];
-        var theme = valid.indexOf(stored) !== -1 ? stored : 'minimal-clean';
+        var theme = valid.indexOf(stored) !== -1 ? stored : 'warm-natural';
         document.documentElement.setAttribute('data-example-theme', theme);
       })();
     </script>

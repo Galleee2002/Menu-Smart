@@ -13,14 +13,16 @@ export function ExampleProductCard({ product, isLast = false }: ExampleProductCa
         .filter(Boolean)
         .join(' ')}
     >
-      <div className={styles.rowMain}>
-        <h3 className={styles.name}>{product.name}</h3>
-        <span className={styles.price}>{formatExamplePrice(product.price)}</span>
+      <div className={styles.content}>
+        <div className={styles.nameRow}>
+          <h3 className={styles.name}>{product.name}</h3>
+          {!product.available ? (
+            <span className={styles.unavailableTag}>no disponible</span>
+          ) : null}
+        </div>
+        <p className={styles.description}>{product.description}</p>
       </div>
-      <p className={styles.description}>
-        {product.description}
-        {!product.available ? <span className={styles.status}>No disponible</span> : null}
-      </p>
+      <span className={styles.price}>{formatExamplePrice(product.price)}</span>
     </article>
   );
 }

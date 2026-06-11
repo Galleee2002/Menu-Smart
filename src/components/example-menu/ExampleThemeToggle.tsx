@@ -9,16 +9,17 @@ interface ExampleThemeToggleProps {
 export function ExampleThemeToggle({ themeId, onThemeChange }: ExampleThemeToggleProps) {
   return (
     <div className={styles.toggle} role="group" aria-label="Selector de estilo visual">
-      {EXAMPLE_MENU_THEMES.map((theme) => (
+      {EXAMPLE_MENU_THEMES.map((theme, index) => (
         <button
           key={theme.id}
           type="button"
           className={[styles.option, themeId === theme.id ? styles.active : ''].filter(Boolean).join(' ')}
           onClick={() => onThemeChange(theme.id)}
           aria-pressed={themeId === theme.id}
+          aria-label={theme.name}
           title={theme.description}
         >
-          {theme.name}
+          {index + 1}
         </button>
       ))}
     </div>

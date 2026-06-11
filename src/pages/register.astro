@@ -1,0 +1,48 @@
+---
+import { RegisterForm } from '../components/auth/RegisterForm';
+import '../styles/auth.scss';
+---
+
+<html lang="es" data-auth-theme>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>SmartMenu — Crear cuenta</title>
+    <meta name="description" content="Crea tu cuenta en SmartMenu y empieza a gestionar tu menú digital." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style is:global>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+      }
+
+      button {
+        font: inherit;
+        cursor: pointer;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--auth-primary);
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <RegisterForm client:load />
+  </body>
+</html>

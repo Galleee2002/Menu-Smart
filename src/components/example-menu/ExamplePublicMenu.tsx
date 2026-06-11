@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { Clock, MapPin } from 'lucide-react';
+import { Utensils } from 'lucide-react';
 import {
   EXAMPLE_CATEGORIES,
   EXAMPLE_PRODUCTS,
@@ -16,11 +16,15 @@ interface ExamplePublicMenuProps {
 }
 
 export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) {
-  const headerRef = useRef<HTMLElement>(null);
+  const stickyShellRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Map<ExampleCategory, HTMLElement>>(new Map());
+  const sectionTitleRefs = useRef<Map<ExampleCategory, HTMLElement>>(new Map());
 
-  const [headerHeight, setHeaderHeight] = useState(0);
+  const [stickyShellHeight, setStickyShellHeight] = useState(0);
   const [activeCategory, setActiveCategory] = useState<ExampleCategory>(EXAMPLE_CATEGORIES[0]);
+  const [concealedSectionTitles, setConcealedSectionTitles] = useState<ReadonlySet<ExampleCategory>>(
+    () => new Set(),
+  );
 
   const productsByCategory = useMemo(() => {
     const grouped = new Map<ExampleCategory, typeof EXAMPLE_PRODUCTS>();
@@ -40,11 +44,11 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
   );
 
   const updateActiveCategory = useCallback(() => {
-    if (headerHeight === 0 || activeCategories.length === 0) {
+    if (stickyShellHeight === 0 || activeCategories.length === 0) {
       return;
     }
 
-    const anchor = stickyOffset + headerHeight + CATEGORY_BAR_HEIGHT;
+    const anchor = stickyOffset + stickyShellHeight;
     let nextCategory = activeCategories[0];
     let matched = false;
 
@@ -77,19 +81,35 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
     }
 
     setActiveCategory((prev) => (prev === nextCategory ? prev : nextCategory));
-  }, [activeCategories, headerHeight, stickyOffset]);
+
+    const concealed = new Set<ExampleCategory>();
+    for (const category of activeCategories) {
+      const title = sectionTitleRefs.current.get(category);
+      if (title && title.getBoundingClientRect().top <= anchor + 1) {
+        concealed.add(category);
+      }
+    }
+
+    setConcealedSectionTitles((prev) => {
+      if (prev.size === concealed.size && activeCategories.every((category) => prev.has(category) === concealed.has(category))) {
+        return prev;
+      }
+
+      return concealed;
+    });
+  }, [activeCategories, stickyOffset, stickyShellHeight]);
 
   useEffect(() => {
-    const header = headerRef.current;
-    if (!header) {
+    const stickyShell = stickyShellRef.current;
+    if (!stickyShell) {
       return;
     }
 
-    const measure = () => setHeaderHeight(header.offsetHeight);
+    const measure = () => setStickyShellHeight(stickyShell.offsetHeight);
     measure();
 
     const observer = new ResizeObserver(measure);
-    observer.observe(header);
+    observer.observe(stickyShell);
 
     return () => observer.disconnect();
   }, []);
@@ -113,33 +133,44 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
     }
   }, []);
 
+  const setSectionTitleRef = useCallback((category: ExampleCategory, node: HTMLElement | null) => {
+    if (node) {
+      sectionTitleRefs.current.set(category, node);
+    } else {
+      sectionTitleRefs.current.delete(category);
+    }
+  }, []);
+
+  const showCategoryInBar = concealedSectionTitles.has(activeCategory);
+
   const cssVars = {
     '--sticky-offset': `${stickyOffset}px`,
-    '--restaurant-header-height': `${headerHeight}px`,
     '--category-bar-height': `${CATEGORY_BAR_HEIGHT}px`,
   } as CSSProperties;
 
   return (
     <div className={styles.menu} style={cssVars}>
-      <header ref={headerRef} className={styles.header}>
-        <h1 className={styles.name}>{EXAMPLE_RESTAURANT.name}</h1>
-        <p className={styles.subtitle}>{EXAMPLE_RESTAURANT.subtitle}</p>
-        <div className={styles.meta}>
-          <span className={styles.metaItem}>
-            <Clock size={13} aria-hidden />
-            {EXAMPLE_RESTAURANT.hours}
-          </span>
-          <span className={styles.metaItem}>
-            <MapPin size={13} aria-hidden />
-            {EXAMPLE_RESTAURANT.location}
-          </span>
-        </div>
-      </header>
+      <div ref={stickyShellRef} className={styles.stickyShell}>
+        <header className={styles.header}>
+          <div className={styles.brand}>
+            <span className={styles.logo} aria-hidden>
+              <Utensils size={20} strokeWidth={2.25} />
+            </span>
+            <h1 className={styles.name}>{EXAMPLE_RESTAURANT.name}</h1>
+          </div>
+        </header>
 
-      <div className={styles.categoryBar}>
-        <h2 key={activeCategory} className={styles.categoryTitle}>
-          {activeCategory}
-        </h2>
+        <div className={styles.categoryBar}>
+          <h2
+            key={activeCategory}
+            className={[styles.categoryTitle, !showCategoryInBar ? styles.categoryTitleHidden : '']
+              .filter(Boolean)
+              .join(' ')}
+            aria-hidden={!showCategoryInBar}
+          >
+            {activeCategory}
+          </h2>
+        </div>
       </div>
 
       <div className={styles.catalog}>
@@ -153,6 +184,18 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
               className={styles.categorySection}
               aria-label={category}
             >
+              <h2
+                ref={(node) => setSectionTitleRef(category, node)}
+                className={[
+                  styles.sectionTitle,
+                  concealedSectionTitles.has(category) ? styles.sectionTitleConcealed : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                aria-hidden={concealedSectionTitles.has(category)}
+              >
+                {category}
+              </h2>
               <div className={styles.productList}>
                 {products.map((product, productIndex) => (
                   <ExampleProductCard
