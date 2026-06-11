@@ -401,10 +401,10 @@ Configurada el **2026-06-10** para aislar pruebas de integración de la base de 
 - [x] CRUD de restaurantes (límite 1 por usuario en MVP).
 - [x] CRUD de menús con publicar/despublicar.
 - [x] CRUD de categorías con reordenamiento.
-- [ ] CRUD de productos (`MenuItem`) con disponibilidad y destacados.
+- [x] CRUD de productos (`MenuItem`) con disponibilidad y destacados.
 - [ ] Gestión de temas (lectura y actualización).
 - [ ] Endpoint público de menú por slugs.
-- [ ] Cambios masivos de precios (porcentual y fijo).
+- [x] Cambios masivos de precios (porcentual y fijo).
 - [ ] Middleware RBAC (Owner / Staff).
 - [ ] Validación Zod en todos los endpoints de escritura.
 - [ ] Seed de desarrollo opcional.
@@ -762,6 +762,56 @@ curl -b cookies.txt -X DELETE http://localhost:4321/api/categories/{id}
 - `scope`: `"menu"` | `"category"` | `"restaurant"` (todos los items del restaurante).
 - Ejecutar en transacción Prisma; redondear a 2 decimales.
 
+#### 6.6.1 Implementación completada
+
+**Fecha de cierre:** 2026-06-11.
+
+| Archivo | Rol |
+| ------- | --- |
+| `src/server/routes/items.ts` | CRUD `GET/POST /api/items`, `PATCH/DELETE /api/items/:id`, `PATCH /api/items/reorder`, `POST /api/items/bulk-pricing` |
+| `src/server/services/item.ts` | Lógica: membresía vía categoría/menú/restaurante, orden automático, reorder transaccional, bulk pricing |
+| `src/server/schemas/item.ts` | `createItemSchema`, `updateItemSchema`, `reorderItemsSchema`, `bulkPricingSchema` (Zod) |
+| `src/server/middleware/rbac.ts` | `loadItemMember` (resuelve ítem → categoría → menú → restaurante → rol) |
+| `src/server/index.ts` | Montaje `app.route("/items", itemRoutes)` |
+| `src/server/__tests__/items.test.ts` | Integración: CRUD, reorder, bulk pricing, 401/400/404, Staff/Owner |
+
+**Decisiones:**
+
+- **Listado:** `GET /api/items` exige `?categoryId=` o `?menuId=` (mutuamente excluyentes); devuelve ítems ordenados por `order` ascendente (por menú: primero por categoría, luego por ítem).
+- **Precio:** almacenado como `Decimal(10,2)`; respuesta API como string con 2 decimales (`"5.99"`).
+- **Orden al crear:** si no se envía `order`, se asigna `max(order) + 1` en la categoría.
+- **RBAC:** `POST`, `PATCH`, `DELETE`, `reorder` y `bulk-pricing` permiten `OWNER` y `STAFF`; `GET` solo requiere membresía.
+- **Reorder:** valida que todos los `id` pertenezcan al `categoryId` indicado; actualización en transacción.
+- **Bulk pricing:** alcance `menu` \| `category` \| `restaurant`; modos `percentage` (multiplicador `1 + value/100`) y `fixed` (suma); precio mínimo 0; redondeo a 2 decimales en transacción.
+- **Envelope:** respuestas CRUD usan `{ success, data }` del PRD.
+
+**Verificación manual:**
+
+```bash
+# Tras login, restaurante, menú y categoría (cookies.txt de §6.2–6.5)
+curl -b cookies.txt "http://localhost:4321/api/items?categoryId={categoryId}"
+
+curl -b cookies.txt "http://localhost:4321/api/items?menuId={menuId}"
+
+curl -b cookies.txt -X POST http://localhost:4321/api/items \
+  -H "Content-Type: application/json" \
+  -d '{"categoryId":"{categoryId}","name":"Bruschetta","price":8.5,"allergens":["gluten"]}'
+
+curl -b cookies.txt -X PATCH http://localhost:4321/api/items/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Bruschetta Premium","price":9.5,"isFeatured":true,"isAvailable":false}'
+
+curl -b cookies.txt -X PATCH http://localhost:4321/api/items/reorder \
+  -H "Content-Type: application/json" \
+  -d '{"categoryId":"{categoryId}","items":[{"id":"item1","order":0},{"id":"item2","order":1}]}'
+
+curl -b cookies.txt -X POST http://localhost:4321/api/items/bulk-pricing \
+  -H "Content-Type: application/json" \
+  -d '{"scope":"menu","menuId":"{menuId}","mode":"percentage","value":10}'
+
+curl -b cookies.txt -X DELETE http://localhost:4321/api/items/{id}
+```
+
 ### 6.7 Temas
 
 #### Reglas de negocio
@@ -880,7 +930,8 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 - [x] Tests de integración API en verde: CRUD restaurantes (§6.3).
 - [x] Tests de integración API en verde: menús (§6.4).
 - [x] Tests de integración API en verde: categorías (§6.5).
-- [ ] Tests de integración API en verde: ítems, temas, menú público.
+- [x] Tests de integración API en verde: ítems (§6.6).
+- [ ] Tests de integración API en verde: temas, menú público.
 - [x] Staff bloqueado en PATCH/DELETE restaurante (§6.3).
 - [ ] Tests de autorización: Staff bloqueado en gestionar miembros y PATCH tema.
 - [x] Registro, login y logout funcionan con cookies.
@@ -888,11 +939,11 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 - [x] Segundo `POST /api/restaurants` devuelve 409 Conflict (§6.3).
 - [x] CRUD menús con autorización correcta (§6.4).
 - [x] CRUD categorías con autorización correcta (§6.5).
-- [ ] CRUD productos con autorización correcta.
+- [x] CRUD productos con autorización correcta (§6.6).
 - [x] Staff no puede eliminar restaurante (§6.3).
 - [ ] Staff no puede gestionar miembros.
 - [ ] Menú público responde 404 si no publicado o restaurante inactivo.
-- [ ] Cambio masivo de precios actualiza todos los items del alcance.
+- [x] Cambio masivo de precios actualiza todos los items del alcance (§6.6).
 - [ ] Todas las respuestas siguen el envelope del PRD.
 - [ ] Deploy en Vercel Preview con Neon staging operativo.
 

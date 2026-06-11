@@ -3,7 +3,7 @@
 | Campo      | Valor                                              |
 | ---------- | -------------------------------------------------- |
 | Versión    | 1.0                                                |
-| Alcance    | Fase 0 + Fase 1 parcial (auth, restaurantes, menús, categorías) |
+| Alcance    | Fase 0 + Fase 1 parcial (auth, restaurantes, menús, categorías, productos) |
 | Referencia | [BACKEND-IMPLEMENTATION.md](./BACKEND-IMPLEMENTATION.md) |
 | Base URL   | `/api` (mismo origen que la app Astro)             |
 
@@ -14,9 +14,9 @@
 | Fase | Estado   | Grupos documentados                          |
 | ---- | -------- | -------------------------------------------- |
 | 0    | Completa | Health check                                 |
-| 1    | Parcial  | Auth (Better Auth), Restaurantes, Menús, Categorías |
+| 1    | Parcial  | Auth (Better Auth), Restaurantes, Menús, Categorías, Productos |
 
-**Pendiente en Fase 1:** productos, temas, menú público y miembros.
+**Pendiente en Fase 1:** temas, menú público y miembros.
 
 ---
 
@@ -555,6 +555,174 @@ Reordena varias categorías de un menú en una sola petición.
 
 ---
 
+## Productos (Menu Items)
+
+Todas las rutas requieren sesión (`401` sin cookie). Los productos pertenecen a una categoría del restaurante del usuario.
+
+### Objeto `MenuItem` (respuesta)
+
+| Campo         | Tipo       | Descripción                                      |
+| ------------- | ---------- | ------------------------------------------------ |
+| `id`          | `string`   | ID interno (CUID)                                |
+| `categoryId`  | `string`   | Categoría a la que pertenece el producto         |
+| `name`        | `string`   | Nombre visible del producto                      |
+| `description` | `string`   | Descripción (puede ser vacía)                    |
+| `price`       | `string`   | Precio con 2 decimales (ej. `"8.50"`)            |
+| `isAvailable` | `boolean`  | Si el producto está disponible en carta          |
+| `isFeatured`  | `boolean`  | Si aparece como destacado                        |
+| `allergens`   | `string[]` | Lista de alérgenos (strings libres en MVP)       |
+| `order`       | `number`   | Posición de ordenación dentro de la categoría    |
+
+---
+
+### `GET /api/items`
+
+Lista productos filtrados por categoría o por menú completo.
+
+**Auth:** miembro del restaurante (`OWNER` o `STAFF`).
+
+**Query params** (uno requerido, no ambos):
+
+| Parámetro    | Descripción                                      |
+| ------------ | ------------------------------------------------ |
+| `categoryId` | Productos de una categoría, ordenados por `order` |
+| `menuId`     | Todos los productos del menú (por categoría y orden) |
+
+**Respuesta `200`:** array de objetos `MenuItem`.
+
+**Errores:** `400` si faltan ambos parámetros o se envían los dos, `404` si no es miembro.
+
+---
+
+### `POST /api/items`
+
+Crea un producto en una categoría.
+
+**Auth:** `OWNER` o `STAFF` del restaurante de la categoría.
+
+**Body:**
+
+| Campo         | Tipo       | Requerido | Descripción                                              |
+| ------------- | ---------- | --------- | -------------------------------------------------------- |
+| `categoryId`  | `string`   | Sí        | Categoría donde crear el producto                        |
+| `name`        | `string`   | Sí        | 1–150 caracteres                                         |
+| `description` | `string`   | No        | Hasta 1000 caracteres                                    |
+| `price`       | `number`   | Sí        | ≥ 0, máximo 2 decimales                                  |
+| `isAvailable` | `boolean`  | No        | Por defecto `true`                                       |
+| `isFeatured`  | `boolean`  | No        | Por defecto `false`                                      |
+| `allergens`   | `string[]` | No        | Por defecto `[]`                                         |
+| `order`       | `number`   | No        | Entero ≥ 0; si se omite, se asigna al final de la categoría |
+
+**Respuesta `201`:** objeto `MenuItem`.
+
+**Errores:** `404` si la categoría no pertenece al restaurante del usuario, `400` si el body es inválido.
+
+---
+
+### `PATCH /api/items/:id`
+
+Actualiza campos de un producto.
+
+**Auth:** `OWNER` o `STAFF` del restaurante del producto.
+
+**Body** (al menos un campo):
+
+| Campo         | Tipo       | Descripción                                              |
+| ------------- | ---------- | -------------------------------------------------------- |
+| `categoryId`  | `string`   | Mover a otra categoría del mismo restaurante             |
+| `name`        | `string`   | 1–150 caracteres                                         |
+| `description` | `string`   | Hasta 1000 caracteres                                    |
+| `price`       | `number`   | ≥ 0, máximo 2 decimales                                  |
+| `isAvailable` | `boolean`  | Disponibilidad en carta                                  |
+| `isFeatured`  | `boolean`  | Destacado                                                |
+| `allergens`   | `string[]` | Lista de alérgenos                                       |
+| `order`       | `number`   | Entero ≥ 0                                               |
+
+**Respuesta `200`:** objeto `MenuItem` actualizado.
+
+**Errores:** `404` si no es miembro, `400` si el body es inválido o la categoría destino no es del mismo restaurante.
+
+---
+
+### `DELETE /api/items/:id`
+
+Elimina un producto.
+
+**Auth:** `OWNER` o `STAFF` del restaurante del producto.
+
+**Respuesta `200`:**
+
+```json
+{ "success": true, "data": { "deleted": true } }
+```
+
+**Errores:** `404` si no es miembro.
+
+---
+
+### `PATCH /api/items/reorder`
+
+Reordena varios productos de una categoría en una sola petición.
+
+**Auth:** `OWNER` o `STAFF` del restaurante de la categoría.
+
+**Body:**
+
+| Campo        | Tipo    | Requerido | Descripción                                   |
+| ------------ | ------- | --------- | --------------------------------------------- |
+| `categoryId` | `string`| Sí        | Categoría cuyos productos se reordenan      |
+| `items`      | `array` | Sí        | Al menos un `{ id, order }` por producto      |
+
+```json
+{
+  "categoryId": "clx...",
+  "items": [
+    { "id": "item1", "order": 0 },
+    { "id": "item2", "order": 1 }
+  ]
+}
+```
+
+**Respuesta `200`:** array de objetos `MenuItem` de la categoría, ya ordenados.
+
+**Errores:** `400` si algún `id` no pertenece al `categoryId`, `404` si no es miembro.
+
+---
+
+### `POST /api/items/bulk-pricing`
+
+Aplica un ajuste de precios masivo a todos los productos de un alcance.
+
+**Auth:** `OWNER` o `STAFF` del restaurante del alcance.
+
+**Body** (discriminado por `scope`):
+
+| Campo          | Tipo     | Requerido | Descripción                                      |
+| -------------- | -------- | --------- | ------------------------------------------------ |
+| `scope`        | `string` | Sí        | `"menu"` \| `"category"` \| `"restaurant"`       |
+| `mode`         | `string` | Sí        | `"percentage"` \| `"fixed"`                      |
+| `value`        | `number` | Sí        | Porcentaje o cantidad fija según `mode`          |
+| `menuId`       | `string` | Si scope=`menu` | Menú cuyos productos se ajustan            |
+| `categoryId`   | `string` | Si scope=`category` | Categoría cuyos productos se ajustan |
+| `restaurantId` | `string` | Si scope=`restaurant` | Todos los productos del restaurante  |
+
+**Modos:**
+
+- `percentage`: nuevo precio = precio actual × (1 + `value` / 100). Ej. `value: 10` → +10 %.
+- `fixed`: nuevo precio = precio actual + `value`. Ej. `value: 1.5` → +1,50 €; valores negativos reducen el precio.
+
+El precio resultante se redondea a 2 decimales y no baja de 0.
+
+**Respuesta `200`:**
+
+```json
+{ "success": true, "data": { "updatedCount": 12 } }
+```
+
+**Errores:** `404` si no es miembro del restaurante del alcance, `400` si el body es inválido.
+
+---
+
 ## Flujo recomendado para el frontend
 
 ```text
@@ -567,7 +735,11 @@ Reordena varias categorías de un menú en una sola petición.
 7. POST /api/menus               →  crear menú (publicar con PATCH)
 8. GET  /api/categories?menuId=  →  listar categorías del menú
 9. POST /api/categories          →  crear categoría
-10. PATCH /api/categories/reorder →  reordenar tras drag-and-drop
+10. PATCH /api/categories/reorder →  reordenar categorías
+11. GET  /api/items?categoryId=  →  listar productos de la categoría
+12. POST /api/items              →  crear producto
+13. PATCH /api/items/reorder     →  reordenar productos tras drag-and-drop
+14. POST /api/items/bulk-pricing →  ajuste masivo de precios (opcional)
 ```
 
 ---
@@ -576,7 +748,6 @@ Reordena varias categorías de un menú en una sola petición.
 
 | Grupo       | Rutas principales                                              |
 | ----------- | -------------------------------------------------------------- |
-| Productos   | `GET/POST /api/items`, `POST /api/items/bulk-pricing`          |
 | Temas       | `GET/PATCH /api/themes/:restaurantId`                          |
 | Público     | `GET /api/public/menu/:restaurantSlug/:menuSlug`               |
 | Miembros    | `GET/POST /api/restaurants/:id/members`                        |

@@ -104,3 +104,41 @@ export const loadCategoryMember: MiddlewareHandler<AppEnv> = async (c, next) => 
   c.set("restaurantRole", membership.role);
   await next();
 };
+
+export const loadItemMember: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const userId = c.get("userId");
+  if (!userId) {
+    return fail(c, "Unauthorized", 401);
+  }
+
+  const itemId = c.req.param("id");
+  const item = await prisma.menuItem.findUnique({
+    where: { id: itemId },
+    select: {
+      category: {
+        select: {
+          menu: { select: { restaurantId: true } },
+        },
+      },
+    },
+  });
+
+  if (!item) {
+    return fail(c, "Not Found", 404);
+  }
+
+  const restaurantId = item.category.menu.restaurantId;
+  const membership = await prisma.userRestaurant.findUnique({
+    where: {
+      userId_restaurantId: { userId, restaurantId },
+    },
+  });
+
+  if (!membership) {
+    return fail(c, "Not Found", 404);
+  }
+
+  c.set("restaurantId", restaurantId);
+  c.set("restaurantRole", membership.role);
+  await next();
+};
