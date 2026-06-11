@@ -30,10 +30,24 @@ export class ForbiddenError extends AppError {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message = "Unauthorized") {
+    super(message, 401, "UNAUTHORIZED");
+    this.name = "UnauthorizedError";
+  }
+}
+
 export class ValidationError extends AppError {
   constructor(message = "Validation failed") {
     super(message, 400, "VALIDATION_ERROR");
     this.name = "ValidationError";
+  }
+}
+
+export class ConflictError extends AppError {
+  constructor(message = "Conflict") {
+    super(message, 409, "CONFLICT");
+    this.name = "ConflictError";
   }
 }
 

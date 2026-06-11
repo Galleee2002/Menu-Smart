@@ -2,8 +2,30 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    environment: "node",
-    include: ["src/**/*.{test,spec}.ts"],
-    restoreMocks: true,
+    projects: [
+      {
+        test: {
+          name: "integration",
+          environment: "node",
+          include: ["src/**/*.{test,spec}.ts"],
+          exclude: ["src/server/__tests__/auth-rate-limit.test.ts"],
+          setupFiles: ["src/test/setup.ts"],
+          env: { DISABLE_AUTH_RATE_LIMIT: "true" },
+          restoreMocks: true,
+          fileParallelism: false,
+          maxWorkers: 1,
+        },
+      },
+      {
+        test: {
+          name: "auth-rate-limit",
+          environment: "node",
+          include: ["src/server/__tests__/auth-rate-limit.test.ts"],
+          setupFiles: ["src/test/setup.ts"],
+          fileParallelism: false,
+          maxWorkers: 1,
+        },
+      },
+    ],
   },
 });

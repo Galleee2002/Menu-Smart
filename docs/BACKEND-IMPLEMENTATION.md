@@ -2,8 +2,8 @@
 
 | Campo      | Valor                                          |
 | ---------- | ---------------------------------------------- |
-| Versión    | 1.3                                            |
-| Estado     | Fase 0 completada · Fase 1 pendiente           |
+| Versión    | 1.4                                            |
+| Estado     | Fase 0 completada · Fase 1 en curso (§6.2 auth) |
 | Referencia | [PRD.md](./PRD.md) v1.3                        |
 | Alcance    | API Hono, Prisma, Better Auth, Neon PostgreSQL |
 | Owner      | GRGSolutions                                   |
@@ -61,9 +61,9 @@ Actualizado tras cierre de **Fase 0** (2026-06-10):
 | API Hono                 | Montada en `/api/*` vía `src/pages/api/[...path].ts`                   |
 | Health check             | `GET /api/health` operativo                                            |
 | Utilidades transversales | `errors.ts`, `response.ts`, `env.ts`                                   |
-| Vitest                   | Configurado; smoke test de health en verde                             |
+| Vitest                   | Health + auth en verde; `setup.ts` usa `DATABASE_URL_TEST`             |
 | `.env.example`           | Documentado (incluye `DATABASE_URL_TEST`)                              |
-| Better Auth              | Dependencia instalada; rutas pendientes (Fase 1)                       |
+| Better Auth              | Operativo en `/api/auth/*`; `requireAuth` y rate limit auth (§6.2)     |
 | Zod / validación         | Dependencias instaladas; schemas pendientes (Fase 1)                   |
 
 **Punto de partida:** Fase 1 — MVP (Backend).
@@ -323,7 +323,7 @@ model Theme {
 | `src/server/lib/prisma.ts` | Cliente Prisma singleton con adapter PG |
 | `src/pages/api/[...path].ts` | Entry point Astro → `app.fetch()` |
 | `vitest.config.ts` | Runner Vitest (entorno Node, `src/**/*.test.ts`) |
-| `src/test/helpers.ts` | Stubs de DB de test (`resetTestDb`, `seedTestData`, `loginAs`) — Fase 1 |
+| `src/test/helpers.ts` | `resetTestDb`, `loginAs`, `seedAuthUser`; `seedTestData` pendiente §6.3 |
 | `src/server/__tests__/health.test.ts` | Smoke test `GET /api/health` |
 | `.env.example` | Plantilla con `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `DATABASE_URL_TEST` |
 
@@ -396,7 +396,7 @@ Configurada el **2026-06-10** para aislar pruebas de integración de la base de 
 
 ### 6.1 Entregables
 
-- [ ] Better Auth operativo (`/api/auth/*`).
+- [x] Better Auth operativo (`/api/auth/*`).
 - [ ] CRUD de restaurantes (límite 1 por usuario en MVP).
 - [ ] CRUD de menús con publicar/despublicar.
 - [ ] CRUD de categorías con reordenamiento.
@@ -422,12 +422,56 @@ Configurada el **2026-06-10** para aislar pruebas de integración de la base de 
 
 #### Endpoints (Better Auth — gestionados por la librería)
 
-| Acción        | Ruta típica               |
-| ------------- | ------------------------- |
-| Registro      | `POST /api/auth/sign-up`  |
-| Login         | `POST /api/auth/sign-in`  |
-| Logout        | `POST /api/auth/sign-out` |
-| Sesión actual | `GET /api/auth/session`   |
+| Acción        | Ruta confirmada (Better Auth 1.6.x) |
+| ------------- | ----------------------------------- |
+| Registro      | `POST /api/auth/sign-up/email`      |
+| Login         | `POST /api/auth/sign-in/email`      |
+| Logout        | `POST /api/auth/sign-out`           |
+| Sesión actual | `GET /api/auth/get-session`         |
+
+#### 6.2.1 Implementación completada
+
+**Fecha de cierre:** 2026-06-11.
+
+| Archivo | Rol |
+| ------- | --- |
+| `src/server/lib/env.ts` | `getBetterAuthSecret()`, `getBetterAuthUrl()` |
+| `src/server/lib/auth.ts` | Better Auth + Prisma adapter, email/password, rate limit nativo |
+| `src/server/types.ts` | `AppEnv` (variables Hono: `user`, `session`, `userId`) |
+| `src/server/middleware/auth.ts` | `sessionMiddleware` (global), `requireAuth` (401 envelope) |
+| `src/server/routes/auth.ts` | Montaje `auth.handler` en `/api/auth/*` |
+| `src/server/index.ts` | Wiring session + rutas auth |
+| `src/server/lib/errors.ts` | `UnauthorizedError` (401) |
+| `src/test/setup.ts` | Carga `.env`; `DATABASE_URL` ← `DATABASE_URL_TEST` en tests |
+| `src/test/helpers.ts` | `resetTestDb()`, `loginAs()`, `seedAuthUser()` |
+| `src/server/__tests__/auth.test.ts` | Sign-up/in/out, sesión, `requireAuth`, rate limit 429 |
+
+**Decisiones:**
+
+- **Post-registro (Opción A):** sign-up solo crea usuario; restaurante en §6.3.
+- **Verificación email:** desactivada (`requireEmailVerification: false`) en MVP.
+- **Respuestas auth:** Better Auth devuelve su JSON en `/api/auth/*` (sin envelope `{ success, data }`).
+- **Rate limit auth:** integrado en Better Auth (`storage: "memory"`); no middleware Hono adicional en esta tarea.
+
+**Rate limit configurado:**
+
+| Alcance | Ventana | Máx. |
+| ------- | ------- | ---- |
+| Rutas auth generales | 60 s | 100 req/IP |
+| `POST /api/auth/sign-in/email` | 10 s | 5 req/IP |
+| `POST /api/auth/sign-up/email` | 10 s | 5 req/IP |
+
+**Verificación manual:**
+
+```bash
+curl -i -c cookies.txt -X POST http://localhost:4321/api/auth/sign-up/email \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Owner","email":"owner@test.com","password":"password123"}'
+
+curl -b cookies.txt http://localhost:4321/api/auth/get-session
+
+curl -b cookies.txt -c cookies.txt -X POST http://localhost:4321/api/auth/sign-out
+```
 
 ### 6.3 Restaurantes
 
@@ -655,14 +699,14 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 | `requireRestaurantMember` | 1    | Usuario en `UserRestaurant` del recurso                |
 | `requireRole(OWNER)`      | 1    | RBAC                                                   |
 | Validación Zod            | 1    | Body y query                                           |
-| Rate limiting básico      | 1    | En `/api/auth/*` y público (p. ej. 100 req/min por IP) |
+| Rate limiting básico      | 1    | Auth: Better Auth nativo (§6.2). Público: middleware Hono pendiente |
 | CSRF                      | 1    | Better Auth + SameSite cookies                         |
 
 ### 6.11 Tareas de implementación ordenadas
 
 ```text
-1. Better Auth + tablas + rutas auth
-2. Middleware auth + RBAC
+1. [x] Better Auth + tablas + rutas auth
+2. Middleware auth + RBAC (requireAuth listo; RBAC pendiente)
 3. Restaurants (CRUD + límite 1 por usuario)
 4. Themes (default on create + GET/PATCH)
 5. Menus (CRUD + isPublished)
@@ -671,7 +715,7 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 8. Bulk pricing
 9. Public menu endpoint
 10. Members (Owner)
-11. Rate limit + logs estructurados
+11. Rate limit público + logs estructurados (auth rate limit hecho en §6.2)
 12. Seed dev + pruebas manuales/automáticas
 ```
 
@@ -680,7 +724,7 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 - [ ] Suite Vitest en verde: schemas Zod, servicios (slugify, bulk pricing), RBAC helpers.
 - [ ] Tests de integración API en verde: CRUD restaurantes, menús, categorías, ítems, temas, menú público.
 - [ ] Tests de autorización: Staff bloqueado en acciones Owner (eliminar restaurante, gestionar miembros, PATCH tema).
-- [ ] Registro, login y logout funcionan con cookies.
+- [x] Registro, login y logout funcionan con cookies.
 - [ ] Usuario sin restaurante puede crear exactamente uno.
 - [ ] Segundo `POST /api/restaurants` devuelve 409 Conflict.
 - [ ] CRUD completo menús, categorías, productos con autorización correcta.

@@ -1,0 +1,38 @@
+---
+description: Límites de verificación y archivos que el agente no debe tocar sin pedirlo
+alwaysApply: true
+---
+
+# Flujo del agente en Menu-Smart
+
+## Verificación: no ejecutar en cada cambio
+
+Convención del proyecto: **terminar la tarea no implica correr comandos**. No uses lint, build ni tests como ritual de cierre salvo que el usuario lo pida o el cambio lo exija de forma evidente.
+
+### Lint
+
+- **No** ejecutes `pnpm lint`, `npm run lint` ni equivalentes de forma proactiva tras cada edición.
+- Este proyecto **no tiene** script `lint` en `package.json`; no lo inventes ni lo añadas salvo petición explícita.
+- Solo lint si el usuario lo pide (p. ej. "corre lint", "arregla el lint").
+
+### Build
+
+- **No** ejecutes `pnpm build`, `npm run build` ni equivalentes de forma proactiva tras cada cambio.
+- `build` ejecuta `prisma generate` y `astro build`: es lento y no debe usarse como comprobación rutinaria.
+- Solo build si el usuario lo pide (p. ej. "haz build", "comprueba que compila para producción") o si la tarea es explícitamente de despliegue/release y el usuario espera validación de build.
+
+### Tests y typecheck
+
+- **No** ejecutes `pnpm test:run`, `vitest` ni `tsc --noEmit` por defecto al cerrar cada tarea.
+- Úsalos solo si el usuario pide verificación, si tocaste tests o si el cambio es amplio y arriesgado (p. ej. refactor de tipos, cambio de schema Prisma).
+
+## `.env` y `.env.example`: no crear ni regenerar
+
+- **No** crees, regeneres ni modifiques `.env.example` salvo que el usuario lo pida explícitamente.
+- **No** copies variables de `.env` a `.env.example` ni documentes secretos en archivos versionados sin que lo pidan.
+- El entorno local ya está en `.env` (gitignored). Si hace falta una variable nueva, indícala en el chat o en la documentación existente (`docs/`), no generes plantillas `.env*` por defecto.
+- **No** leas ni expongas el contenido de `.env` en respuestas ni en commits.
+
+## Alcance mínimo
+
+- Haz el cambio pedido y nada más: no añadas pasos de verificación, plantillas de entorno ni scripts auxiliares que el usuario no haya solicitado.

@@ -24,3 +24,29 @@ export function getDatabaseUrl(): string {
 export function getDirectDatabaseUrl(): string | undefined {
   return process.env.DATABASE_URL_UNPOOLED;
 }
+
+/** Better Auth session signing secret (min 32 characters). */
+export function getBetterAuthSecret(): string {
+  const secret = process.env.BETTER_AUTH_SECRET;
+
+  if (!secret) {
+    throw new Error("BETTER_AUTH_SECRET is required");
+  }
+
+  if (secret.length < 32) {
+    throw new Error("BETTER_AUTH_SECRET must be at least 32 characters");
+  }
+
+  return secret;
+}
+
+/** Public base URL of the app (e.g. http://localhost:4321). */
+export function getBetterAuthUrl(): string {
+  const url = process.env.BETTER_AUTH_URL;
+
+  if (!url) {
+    throw new Error("BETTER_AUTH_URL is required");
+  }
+
+  return url;
+}
