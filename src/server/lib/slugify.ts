@@ -36,3 +36,33 @@ export async function generateUniqueRestaurantSlug(
     counter += 1;
   }
 }
+
+export async function generateUniqueMenuSlug(
+  restaurantId: string,
+  base: string,
+  excludeMenuId?: string,
+): Promise<string> {
+  let slug = slugify(base);
+  if (!slug) {
+    slug = "menu";
+  }
+
+  let candidate = slug;
+  let counter = 2;
+
+  while (true) {
+    const existing = await prisma.menu.findUnique({
+      where: {
+        restaurantId_slug: { restaurantId, slug: candidate },
+      },
+      select: { id: true },
+    });
+
+    if (!existing || existing.id === excludeMenuId) {
+      return candidate;
+    }
+
+    candidate = `${slug}-${counter}`;
+    counter += 1;
+  }
+}

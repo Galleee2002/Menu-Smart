@@ -3,7 +3,7 @@
 | Campo      | Valor                                          |
 | ---------- | ---------------------------------------------- |
 | Versión    | 1.4                                            |
-| Estado     | Fase 0 completada · Fase 1 en curso (§6.2 auth) |
+| Estado     | Fase 0 completada · Fase 1 en curso (§6.2 auth · §6.3 restaurantes) |
 | Referencia | [PRD.md](./PRD.md) v1.3                        |
 | Alcance    | API Hono, Prisma, Better Auth, Neon PostgreSQL |
 | Owner      | GRGSolutions                                   |
@@ -61,10 +61,11 @@ Actualizado tras cierre de **Fase 0** (2026-06-10):
 | API Hono                 | Montada en `/api/*` vía `src/pages/api/[...path].ts`                   |
 | Health check             | `GET /api/health` operativo                                            |
 | Utilidades transversales | `errors.ts`, `response.ts`, `env.ts`                                   |
-| Vitest                   | Health + auth en verde; `setup.ts` usa `DATABASE_URL_TEST`             |
+| Vitest                   | Health + auth + restaurants en verde; `setup.ts` usa `DATABASE_URL_TEST` |
 | `.env.example`           | Documentado (incluye `DATABASE_URL_TEST`)                              |
 | Better Auth              | Operativo en `/api/auth/*`; `requireAuth` y rate limit auth (§6.2)     |
-| Zod / validación         | Dependencias instaladas; schemas pendientes (Fase 1)                   |
+| Restaurantes             | CRUD completo en `/api/restaurants/*`; RBAC base Owner/Staff (§6.3)    |
+| Zod / validación         | Schemas restaurante; resto de dominio pendiente (Fase 1)               |
 
 **Punto de partida:** Fase 1 — MVP (Backend).
 
@@ -323,7 +324,7 @@ model Theme {
 | `src/server/lib/prisma.ts` | Cliente Prisma singleton con adapter PG |
 | `src/pages/api/[...path].ts` | Entry point Astro → `app.fetch()` |
 | `vitest.config.ts` | Runner Vitest (entorno Node, `src/**/*.test.ts`) |
-| `src/test/helpers.ts` | `resetTestDb`, `loginAs`, `seedAuthUser`; `seedTestData` pendiente §6.3 |
+| `src/test/helpers.ts` | `resetTestDb`, `loginAs`, `seedAuthUser`, `seedTestData` (§6.3) |
 | `src/server/__tests__/health.test.ts` | Smoke test `GET /api/health` |
 | `.env.example` | Plantilla con `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `DATABASE_URL_TEST` |
 
@@ -397,9 +398,9 @@ Configurada el **2026-06-10** para aislar pruebas de integración de la base de 
 ### 6.1 Entregables
 
 - [x] Better Auth operativo (`/api/auth/*`).
-- [ ] CRUD de restaurantes (límite 1 por usuario en MVP).
-- [ ] CRUD de menús con publicar/despublicar.
-- [ ] CRUD de categorías con reordenamiento.
+- [x] CRUD de restaurantes (límite 1 por usuario en MVP).
+- [x] CRUD de menús con publicar/despublicar.
+- [x] CRUD de categorías con reordenamiento.
 - [ ] CRUD de productos (`MenuItem`) con disponibilidad y destacados.
 - [ ] Gestión de temas (lectura y actualización).
 - [ ] Endpoint público de menú por slugs.
@@ -506,6 +507,52 @@ createRestaurantSchema = z.object({
 });
 ```
 
+#### 6.3.1 Implementación completada
+
+**Fecha de cierre:** 2026-06-11.
+
+| Archivo | Rol |
+| ------- | --- |
+| `src/server/routes/restaurants.ts` | CRUD `GET/POST /api/restaurants`, `GET/PATCH/DELETE /api/restaurants/:id` |
+| `src/server/services/restaurant.ts` | Lógica de negocio: límite 1 restaurante/usuario, slug, tema por defecto, cascada al eliminar |
+| `src/server/schemas/restaurant.ts` | `createRestaurantSchema`, `updateRestaurantSchema` (Zod) |
+| `src/server/middleware/rbac.ts` | `loadRestaurantMember`, `requireRole` (base RBAC por restaurante) |
+| `src/server/lib/slugify.ts` | `slugify()`, `generateUniqueRestaurantSlug()` |
+| `src/server/lib/theme-defaults.ts` | `DEFAULT_THEME` aplicado al crear restaurante |
+| `src/server/lib/errors.ts` | `ConflictError` (409) |
+| `src/server/types.ts` | `restaurantId`, `restaurantRole` en `AppEnv` |
+| `src/server/index.ts` | Montaje `app.route("/restaurants", restaurantRoutes)` |
+| `src/test/helpers.ts` | `seedTestData()` (owner, staff, restaurante, menú de prueba) |
+| `src/server/__tests__/restaurants.test.ts` | Integración: CRUD, 401/403/404/409, tema por defecto, cascada |
+| `src/server/lib/__tests__/slugify.test.ts` | Unit tests de normalización y unicidad de slug |
+
+**Decisiones:**
+
+- **Límite MVP:** `createRestaurant` lanza `409` si el usuario ya tiene membresía en `UserRestaurant`.
+- **Slug:** generado desde `name` si no se envía; colisiones resueltas con sufijo numérico (`-2`, `-3`, …).
+- **RBAC:** `PATCH` y `DELETE` requieren rol `OWNER`; `GET /:id` exige membresía (404 si no es miembro).
+- **Tema:** se crea en la misma transacción con `DEFAULT_THEME` (`primaryColor: #10b981`, etc.).
+- **Envelope:** respuestas CRUD usan `{ success, data }` del PRD.
+
+**Verificación manual:**
+
+```bash
+# Tras login (cookies.txt de §6.2)
+curl -b cookies.txt -X POST http://localhost:4321/api/restaurants \
+  -H "Content-Type: application/json" \
+  -d '{"name":"La Casa del Sabor","description":"Comida casera"}'
+
+curl -b cookies.txt http://localhost:4321/api/restaurants
+
+curl -b cookies.txt http://localhost:4321/api/restaurants/{id}
+
+curl -b cookies.txt -X PATCH http://localhost:4321/api/restaurants/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Nuevo nombre"}'
+
+curl -b cookies.txt -X DELETE http://localhost:4321/api/restaurants/{id}
+```
+
 ### 6.4 Menús
 
 #### Reglas de negocio
@@ -527,6 +574,71 @@ createRestaurantSchema = z.object({
 #### Query params (GET)
 
 - `?restaurantId=` (opcional en MVP si solo hay uno; útil para validación).
+
+#### Esquemas Zod (ejemplo)
+
+```ts
+createMenuSchema = z.object({
+  name: z.string().min(2).max(100),
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
+  restaurantId: z.string().optional(),
+  isPublished: z.boolean().optional(),
+});
+
+updateMenuSchema = z
+  .object({
+    name: z.string().min(2).max(100).optional(),
+    slug: z
+      .string()
+      .regex(/^[a-z0-9-]+$/)
+      .optional(),
+    isPublished: z.boolean().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0);
+```
+
+#### 6.4.1 Implementación completada
+
+**Fecha de cierre:** 2026-06-11.
+
+| Archivo | Rol |
+| ------- | --- |
+| `src/server/routes/menus.ts` | CRUD `GET/POST /api/menus`, `PATCH/DELETE /api/menus/:id` |
+| `src/server/services/menu.ts` | Lógica de negocio: membresía, slug por restaurante, publicar/despublicar |
+| `src/server/schemas/menu.ts` | `createMenuSchema`, `updateMenuSchema` (Zod) |
+| `src/server/middleware/rbac.ts` | `loadMenuMember` (resuelve menú → restaurante → rol) |
+| `src/server/lib/slugify.ts` | `generateUniqueMenuSlug()` (unicidad por `restaurantId`) |
+| `src/server/index.ts` | Montaje `app.route("/menus", menuRoutes)` |
+| `src/server/__tests__/menus.test.ts` | Integración: CRUD, 401/403/404/409, slug, cascada, Staff/Owner |
+
+**Decisiones:**
+
+- **Listado:** `GET /api/menus` devuelve `[]` si el usuario no tiene restaurante o no es miembro del `restaurantId` consultado.
+- **Slug:** único por restaurante (`@@unique([restaurantId, slug])`); generado desde `name` si no se envía.
+- **RBAC:** `POST` y `PATCH` permiten `OWNER` y `STAFF`; `DELETE` solo `OWNER`.
+- **Publicación:** `isPublished` editable en creación y actualización; menús nuevos por defecto `false`.
+- **Cascada:** eliminar menú borra categorías e ítems (Prisma `onDelete: Cascade`).
+- **Envelope:** respuestas CRUD usan `{ success, data }` del PRD.
+
+**Verificación manual:**
+
+```bash
+# Tras login y restaurante creado (cookies.txt de §6.2–6.3)
+curl -b cookies.txt http://localhost:4321/api/menus
+
+curl -b cookies.txt -X POST http://localhost:4321/api/menus \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Carta de Vinos","isPublished":false}'
+
+curl -b cookies.txt -X PATCH http://localhost:4321/api/menus/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"isPublished":true}'
+
+curl -b cookies.txt -X DELETE http://localhost:4321/api/menus/{id}
+```
 
 ### 6.5 Categorías
 
@@ -556,6 +668,49 @@ createRestaurantSchema = z.object({
     { "id": "cat2", "order": 1 }
   ]
 }
+```
+
+#### 6.5.1 Implementación completada
+
+**Fecha de cierre:** 2026-06-11.
+
+| Archivo | Rol |
+| ------- | --- |
+| `src/server/routes/categories.ts` | CRUD `GET/POST /api/categories`, `PATCH/DELETE /api/categories/:id`, `PATCH /api/categories/reorder` |
+| `src/server/services/category.ts` | Lógica: membresía vía menú, orden automático, reorder transaccional |
+| `src/server/schemas/category.ts` | `createCategorySchema`, `updateCategorySchema`, `reorderCategoriesSchema` (Zod) |
+| `src/server/middleware/rbac.ts` | `loadCategoryMember` (resuelve categoría → menú → restaurante → rol) |
+| `src/server/index.ts` | Montaje `app.route("/categories", categoryRoutes)` |
+| `src/server/__tests__/categories.test.ts` | Integración: CRUD, reorder, 401/400/404, cascada items, Staff/Owner |
+
+**Decisiones:**
+
+- **Listado:** `GET /api/categories` exige `?menuId=`; devuelve categorías ordenadas por `order` ascendente.
+- **Orden al crear:** si no se envía `order`, se asigna `max(order) + 1` en el menú.
+- **RBAC:** `POST`, `PATCH`, `DELETE` y `reorder` permiten `OWNER` y `STAFF`; `GET` solo requiere membresía.
+- **Reorder:** valida que todos los `id` pertenezcan al `menuId` indicado; actualización en transacción.
+- **Cascada:** eliminar categoría borra sus ítems (Prisma `onDelete: Cascade`).
+- **Envelope:** respuestas CRUD usan `{ success, data }` del PRD.
+
+**Verificación manual:**
+
+```bash
+# Tras login, restaurante y menú creados (cookies.txt de §6.2–6.4)
+curl -b cookies.txt "http://localhost:4321/api/categories?menuId={menuId}"
+
+curl -b cookies.txt -X POST http://localhost:4321/api/categories \
+  -H "Content-Type: application/json" \
+  -d '{"menuId":"{menuId}","name":"Entrantes"}'
+
+curl -b cookies.txt -X PATCH http://localhost:4321/api/categories/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Entrantes Calientes","order":0}'
+
+curl -b cookies.txt -X PATCH http://localhost:4321/api/categories/reorder \
+  -H "Content-Type: application/json" \
+  -d '{"menuId":"{menuId}","items":[{"id":"cat1","order":0},{"id":"cat2","order":1}]}'
+
+curl -b cookies.txt -X DELETE http://localhost:4321/api/categories/{id}
 ```
 
 ### 6.6 Productos (Menu Items)
@@ -706,10 +861,10 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 
 ```text
 1. [x] Better Auth + tablas + rutas auth
-2. Middleware auth + RBAC (requireAuth listo; RBAC pendiente)
-3. Restaurants (CRUD + límite 1 por usuario)
+2. [x] Middleware auth + RBAC base (`loadRestaurantMember`, `requireRole`)
+3. [x] Restaurants (CRUD + límite 1 por usuario)
 4. Themes (default on create + GET/PATCH)
-5. Menus (CRUD + isPublished)
+5. [x] Menus (CRUD + isPublished)
 6. Categories (CRUD + reorder)
 7. Items (CRUD + reorder)
 8. Bulk pricing
@@ -722,13 +877,20 @@ El PRD menciona gestión de usuarios en dashboard; en MVP el alcance backend es:
 ### 6.12 Criterios de aceptación — Fase 1
 
 - [ ] Suite Vitest en verde: schemas Zod, servicios (slugify, bulk pricing), RBAC helpers.
-- [ ] Tests de integración API en verde: CRUD restaurantes, menús, categorías, ítems, temas, menú público.
-- [ ] Tests de autorización: Staff bloqueado en acciones Owner (eliminar restaurante, gestionar miembros, PATCH tema).
+- [x] Tests de integración API en verde: CRUD restaurantes (§6.3).
+- [x] Tests de integración API en verde: menús (§6.4).
+- [x] Tests de integración API en verde: categorías (§6.5).
+- [ ] Tests de integración API en verde: ítems, temas, menú público.
+- [x] Staff bloqueado en PATCH/DELETE restaurante (§6.3).
+- [ ] Tests de autorización: Staff bloqueado en gestionar miembros y PATCH tema.
 - [x] Registro, login y logout funcionan con cookies.
-- [ ] Usuario sin restaurante puede crear exactamente uno.
-- [ ] Segundo `POST /api/restaurants` devuelve 409 Conflict.
-- [ ] CRUD completo menús, categorías, productos con autorización correcta.
-- [ ] Staff no puede eliminar restaurante ni gestionar miembros.
+- [x] Usuario sin restaurante puede crear exactamente uno (§6.3).
+- [x] Segundo `POST /api/restaurants` devuelve 409 Conflict (§6.3).
+- [x] CRUD menús con autorización correcta (§6.4).
+- [x] CRUD categorías con autorización correcta (§6.5).
+- [ ] CRUD productos con autorización correcta.
+- [x] Staff no puede eliminar restaurante (§6.3).
+- [ ] Staff no puede gestionar miembros.
 - [ ] Menú público responde 404 si no publicado o restaurante inactivo.
 - [ ] Cambio masivo de precios actualiza todos los items del alcance.
 - [ ] Todas las respuestas siguen el envelope del PRD.

@@ -6,6 +6,8 @@ import { getAllowedOrigins } from "./lib/env";
 import { fail, ok } from "./lib/response";
 import { sessionMiddleware } from "./middleware/auth";
 import { authRoutes } from "./routes/auth";
+import { categoryRoutes } from "./routes/categories";
+import { menuRoutes } from "./routes/menus";
 import { restaurantRoutes } from "./routes/restaurants";
 import type { AppEnv } from "./types";
 
@@ -39,6 +41,8 @@ app.notFound((c) => fail(c, "Not Found", 404));
 app.use("*", sessionMiddleware);
 app.route("/auth", authRoutes);
 app.route("/restaurants", restaurantRoutes);
+app.route("/menus", menuRoutes);
+app.route("/categories", categoryRoutes);
 
 app.get("/health", (c) => ok(c, { status: "ok" }));
 
