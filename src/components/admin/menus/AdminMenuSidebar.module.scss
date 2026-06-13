@@ -1,11 +1,14 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
+  gap: 0;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
   background: var(--admin-surface);
+  overflow: hidden;
 }
 
 .sidebarHeader {
@@ -13,6 +16,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-shrink: 0;
+  padding: 16px 16px 12px;
 
   button {
     display: inline-flex;
@@ -30,28 +35,68 @@
   color: var(--admin-text);
 }
 
+.sidebarBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 12px 16px 16px;
+}
+
 .createForm {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-top: 4px;
-  border-top: 1px solid var(--admin-border);
+  flex-shrink: 0;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 24px 12px;
+  text-align: center;
+}
+
+.emptyIcon {
+  display: inline-flex;
+  color: var(--admin-text-muted);
+}
+
+.emptyTitle {
   margin: 0;
   font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--admin-text);
+}
+
+.emptyDescription {
+  margin: 0;
+  max-width: 22ch;
+  font-size: 0.75rem;
   line-height: 1.5;
   color: var(--admin-text-muted);
 }
 
 .menuList {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 4px;
+  min-height: 0;
   margin: 0;
   padding: 0;
   list-style: none;
+  overflow-y: auto;
 }
 
 .menuItem,
@@ -117,6 +162,15 @@
 
 @media (max-width: 768px) {
   .sidebar {
+    min-height: auto;
+  }
+
+  .sidebarBody {
     padding: 12px;
+  }
+
+  .empty {
+    flex: none;
+    padding: 16px 8px;
   }
 }

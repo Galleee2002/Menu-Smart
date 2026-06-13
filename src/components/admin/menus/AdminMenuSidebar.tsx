@@ -1,4 +1,4 @@
-import { ExternalLink, Plus } from 'lucide-react';
+import { BookOpen, ExternalLink, Plus } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { createMenu, type Menu } from '../../../lib/admin-api';
 import formStyles from '../admin-form.module.scss';
@@ -71,69 +71,79 @@ export function AdminMenuSidebar({
         ) : null}
       </div>
 
-      {showCreate && canEdit ? (
-        <form className={styles.createForm} onSubmit={handleCreate} noValidate>
-          <div className={formStyles.field}>
-            <label className={formStyles.label} htmlFor="new-menu-name">
-              Nombre del menú
-            </label>
-            <input
-              id="new-menu-name"
-              className={formStyles.input}
-              type="text"
-              value={newName}
-              placeholder="Ej. Carta principal"
-              disabled={creating}
-              onChange={(event) => setNewName(event.target.value)}
-            />
+      <div className={styles.sidebarBody}>
+        {showCreate && canEdit ? (
+          <form className={styles.createForm} onSubmit={handleCreate} noValidate>
+            <div className={formStyles.field}>
+              <label className={formStyles.label} htmlFor="new-menu-name">
+                Nombre del menú
+              </label>
+              <input
+                id="new-menu-name"
+                className={formStyles.input}
+                type="text"
+                value={newName}
+                placeholder="Ej. Carta principal"
+                disabled={creating}
+                onChange={(event) => setNewName(event.target.value)}
+              />
+            </div>
+            <button className={formStyles.submit} type="submit" disabled={creating}>
+              {creating ? 'Creando…' : 'Crear menú'}
+            </button>
+          </form>
+        ) : null}
+
+        {menus.length === 0 ? (
+          <div className={styles.empty}>
+            <span className={styles.emptyIcon} aria-hidden>
+              <BookOpen size={20} strokeWidth={2} />
+            </span>
+            <p className={styles.emptyTitle}>Sin cartas todavía</p>
+            <p className={styles.emptyDescription}>
+              Pulsa <strong>Nuevo</strong> para crear la primera carta de tu restaurante.
+            </p>
           </div>
-          <button className={formStyles.submit} type="submit" disabled={creating}>
-            {creating ? 'Creando…' : 'Crear menú'}
-          </button>
-        </form>
-      ) : null}
+        ) : (
+          <ul className={styles.menuList}>
+            {menus.map((menu) => {
+              const isSelected = menu.id === selectedMenuId;
+              const previewHref = `/menu/${restaurantSlug}/${menu.slug}`;
 
-      {menus.length === 0 ? (
-        <p className={styles.empty}>Aún no hay menús. Crea el primero para empezar.</p>
-      ) : (
-        <ul className={styles.menuList}>
-          {menus.map((menu) => {
-            const isSelected = menu.id === selectedMenuId;
-            const previewHref = `/menu/${restaurantSlug}/${menu.slug}`;
-
-            return (
-              <li key={menu.id}>
-                <button
-                  type="button"
-                  className={isSelected ? styles.menuItemActive : styles.menuItem}
-                  aria-current={isSelected ? 'true' : undefined}
-                  onClick={() => onSelect(menu.id)}
-                >
-                  <span className={styles.menuItemName}>{menu.name}</span>
-                  <span
-                    className={
-                      menu.isPublished ? sharedStyles.badgePublished : sharedStyles.badgeDraft
-                    }
+              return (
+                <li key={menu.id}>
+                  <button
+                    type="button"
+                    className={isSelected ? styles.menuItemActive : styles.menuItem}
+                    aria-current={isSelected ? 'true' : undefined}
+                    onClick={() => onSelect(menu.id)}
                   >
-                    {menu.isPublished ? 'Publicado' : 'Borrador'}
-                  </span>
-                </button>
-                {isSelected && menu.isPublished ? (
-                  <a
-                    className={styles.previewLink}
-                    href={previewHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink size={12} strokeWidth={2.25} aria-hidden />
-                    Ver carta
-                  </a>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                    <span className={styles.menuItemName}>{menu.name}</span>
+                    <span
+                      className={
+                        menu.isPublished ? sharedStyles.badgePublished : sharedStyles.badgeDraft
+                      }
+                    >
+                      {menu.isPublished ? 'Publicado' : 'Borrador'}
+                    </span>
+                  </button>
+                  {isSelected && menu.isPublished ? (
+                    <a
+                      className={styles.previewLink}
+                      href={previewHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink size={12} strokeWidth={2.25} aria-hidden />
+                      Ver carta
+                    </a>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </aside>
   );
 }

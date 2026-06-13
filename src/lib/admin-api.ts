@@ -394,3 +394,38 @@ export async function bulkPricing(
 
   return parseApiResponse<{ updatedCount: number }>(res);
 }
+
+export type Theme = {
+  id: string;
+  restaurantId: string;
+  primaryColor: string;
+  secondaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  accentColor: string;
+  fontFamily: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function getTheme(restaurantId: string): Promise<ApiResult<Theme>> {
+  const res = await fetch(`/api/themes/${restaurantId}`, { credentials: 'include' });
+  return parseApiResponse<Theme>(res);
+}
+
+export type Member = {
+  userId: string;
+  name: string;
+  email: string;
+  role: RestaurantRole;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listMembers(restaurantId: string): Promise<ApiResult<Member[]>> {
+  const res = await fetch(`/api/restaurants/${restaurantId}/members`, {
+    credentials: 'include',
+  });
+
+  return parseApiResponse<Member[]>(res);
+}

@@ -1,4 +1,5 @@
 import { createElement, type ComponentType } from 'react';
+import { AdminHomePage } from './AdminHomePage';
 import { AdminMenusPage } from './AdminMenusPage';
 import { AdminPlaceholderPage } from './AdminPlaceholderPage';
 import { AdminRestaurantPage } from './AdminRestaurantPage';
@@ -10,10 +11,7 @@ function createPlaceholderPage(title: string, description?: string): ComponentTy
 }
 
 const ADMIN_PAGES: Record<string, ComponentType> = {
-  '/admin': createPlaceholderPage(
-    'Inicio',
-    'Resumen de tu restaurante y accesos rápidos.',
-  ),
+  '/admin': AdminHomePage,
   '/admin/restaurant': AdminRestaurantPage,
   '/admin/menus': AdminMenusPage,
   '/admin/theme': createPlaceholderPage(

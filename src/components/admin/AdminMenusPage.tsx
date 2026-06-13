@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { PenLine } from 'lucide-react';
 import {
   listCategories,
   listItems,
@@ -25,6 +26,7 @@ type AdminMenusPageState = {
   menuDataLoading: boolean;
   bannerError: string;
   successMessage: string;
+  dangerMessage: string;
 };
 
 type AdminMenusPageAction =
@@ -53,6 +55,7 @@ const initialAdminMenusPageState: AdminMenusPageState = {
   menuDataLoading: false,
   bannerError: '',
   successMessage: '',
+  dangerMessage: '',
 };
 
 function adminMenusPageReducer(
@@ -88,6 +91,7 @@ function adminMenusPageReducer(
         selectedMenuId: action.menuId,
         bannerError: '',
         successMessage: '',
+        dangerMessage: '',
       };
     case 'menu_created':
       return {
@@ -95,6 +99,7 @@ function adminMenusPageReducer(
         menus: [...state.menus, action.menu],
         selectedMenuId: action.menu.id,
         successMessage: 'Menú creado correctamente.',
+        dangerMessage: '',
       };
     case 'menu_updated':
       return {
@@ -110,16 +115,17 @@ function adminMenusPageReducer(
         selectedMenuId: action.nextId,
         categories: [],
         items: [],
-        successMessage: 'Menú eliminado.',
+        successMessage: '',
+        dangerMessage: 'Menú eliminado.',
       };
     case 'set_categories':
       return { ...state, categories: action.categories };
     case 'set_items':
       return { ...state, items: action.items };
     case 'show_error':
-      return { ...state, bannerError: action.message, successMessage: '' };
+      return { ...state, bannerError: action.message, successMessage: '', dangerMessage: '' };
     case 'show_success':
-      return { ...state, successMessage: action.message, bannerError: '' };
+      return { ...state, successMessage: action.message, bannerError: '', dangerMessage: '' };
     default: {
       const _exhaustive: never = action;
       return _exhaustive;
@@ -167,6 +173,7 @@ export function AdminMenusPage() {
     menuDataLoading,
     bannerError,
     successMessage,
+    dangerMessage,
   } = state;
 
   const selectedMenu = useMemo(
@@ -323,6 +330,12 @@ export function AdminMenusPage() {
         </p>
       ) : null}
 
+      {dangerMessage ? (
+        <p className={styles.bannerDanger} role="status">
+          {dangerMessage}
+        </p>
+      ) : null}
+
       {successMessage ? (
         <p className={styles.bannerSuccess} role="status">
           {successMessage}
@@ -370,7 +383,15 @@ export function AdminMenusPage() {
             </div>
           ) : (
             <div className={styles.emptyEditor}>
-              <p>Selecciona un menú o crea uno nuevo para empezar.</p>
+              <span className={styles.emptyEditorIcon} aria-hidden>
+                <PenLine size={22} strokeWidth={2} />
+              </span>
+              <p className={styles.emptyEditorTitle}>Elige una carta para editar</p>
+              <p className={styles.emptyEditorDescription}>
+                {menus.length === 0
+                  ? 'Crea tu primera carta desde el panel izquierdo para empezar a añadir categorías y productos.'
+                  : 'Selecciona una carta de la lista o crea una nueva para gestionar su contenido.'}
+              </p>
             </div>
           )}
         </div>
