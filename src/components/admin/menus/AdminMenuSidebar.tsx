@@ -10,6 +10,7 @@ interface AdminMenuSidebarProps {
   selectedMenuId: string | null;
   restaurantSlug: string;
   canEdit: boolean;
+  inLayoutEditor?: boolean;
   onSelect: (menuId: string) => void;
   onCreated: (menu: Menu) => void;
   onError: (message: string) => void;
@@ -20,6 +21,7 @@ export function AdminMenuSidebar({
   selectedMenuId,
   restaurantSlug,
   canEdit,
+  inLayoutEditor = false,
   onSelect,
   onCreated,
   onError,
@@ -55,7 +57,10 @@ export function AdminMenuSidebar({
   };
 
   return (
-    <aside className={styles.sidebar} aria-label="Lista de menús">
+    <aside
+      className={inLayoutEditor ? `${styles.sidebar} ${styles.sidebarInLayout}` : styles.sidebar}
+      aria-label="Lista de menús"
+    >
       <div className={styles.sidebarHeader}>
         <h2 className={styles.sidebarTitle}>Cartas</h2>
         {canEdit ? (

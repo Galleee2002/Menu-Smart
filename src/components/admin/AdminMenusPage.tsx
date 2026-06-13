@@ -348,12 +348,19 @@ export function AdminMenusPage() {
         </p>
       ) : null}
 
-      <div className={styles.layout}>
+      <div
+        className={
+          selectedMenu && !menuDataLoading
+            ? `${styles.layout} ${styles.layoutEditor}`
+            : styles.layout
+        }
+      >
         <AdminMenuSidebar
           menus={menus}
           selectedMenuId={selectedMenuId}
           restaurantSlug={restaurant.slug}
           canEdit={canEdit}
+          inLayoutEditor={Boolean(selectedMenu && !menuDataLoading)}
           onSelect={handleSelectMenu}
           onCreated={handleMenuCreated}
           onError={handleError}
@@ -368,6 +375,7 @@ export function AdminMenusPage() {
               items={items}
               canEdit={canEdit}
               isOwner={isOwner}
+              inLayoutEditor
               onMenuUpdated={handleMenuUpdated}
               onMenuDeleted={handleMenuDeleted}
               onCategoriesChange={handleCategoriesChange}

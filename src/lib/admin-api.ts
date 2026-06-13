@@ -413,6 +413,45 @@ export async function getTheme(restaurantId: string): Promise<ApiResult<Theme>> 
   return parseApiResponse<Theme>(res);
 }
 
+export type UpdateThemeInput = {
+  primaryColor?: string;
+  secondaryColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  accentColor?: string;
+  fontFamily?: string;
+};
+
+export async function updateTheme(
+  restaurantId: string,
+  input: UpdateThemeInput,
+): Promise<ApiResult<Theme>> {
+  const res = await fetch(`/api/themes/${restaurantId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(input),
+  });
+
+  return parseApiResponse<Theme>(res);
+}
+
+export type ThemePresetId = 'classic' | 'dark' | 'warm' | 'minimal';
+
+export async function applyThemePreset(
+  restaurantId: string,
+  preset: ThemePresetId,
+): Promise<ApiResult<Theme>> {
+  const res = await fetch(`/api/themes/${restaurantId}/apply-preset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ preset }),
+  });
+
+  return parseApiResponse<Theme>(res);
+}
+
 export type Member = {
   userId: string;
   name: string;

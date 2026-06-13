@@ -2,6 +2,7 @@ import { createElement, type ComponentType } from 'react';
 import { AdminHomePage } from './AdminHomePage';
 import { AdminMenusPage } from './AdminMenusPage';
 import { AdminPlaceholderPage } from './AdminPlaceholderPage';
+import { AdminThemePage } from './AdminThemePage';
 import { AdminRestaurantPage } from './AdminRestaurantPage';
 
 function createPlaceholderPage(title: string, description?: string): ComponentType {
@@ -14,10 +15,7 @@ const ADMIN_PAGES: Record<string, ComponentType> = {
   '/admin': AdminHomePage,
   '/admin/restaurant': AdminRestaurantPage,
   '/admin/menus': AdminMenusPage,
-  '/admin/theme': createPlaceholderPage(
-    'Apariencia',
-    'Personaliza colores, tipografía y estilo visual del menú público.',
-  ),
+  '/admin/theme': AdminThemePage,
   '/admin/members': createPlaceholderPage(
     'Equipo',
     'Invita empleados y administra los roles de tu restaurante.',

@@ -1,5 +1,6 @@
 import { Check, Copy } from 'lucide-react';
 import type { Restaurant } from '../../lib/admin-api';
+import { DEFAULT_CURRENCY, getCurrencyLabel } from '../../lib/currency';
 import { AdminConfirmDialog } from './AdminConfirmDialog';
 import { AdminToggle } from './AdminToggle';
 import formStyles from './admin-form.module.scss';
@@ -231,6 +232,37 @@ function AdminRestaurantStatusSection({
   );
 }
 
+function AdminRestaurantRegionalSection() {
+  return (
+    <section className={styles.card} aria-labelledby="restaurant-regional-title">
+      <h2 id="restaurant-regional-title" className={styles.cardTitle}>
+        Regional
+      </h2>
+      <div className={styles.cardBody}>
+        <div className={formStyles.field}>
+          <label className={formStyles.label} htmlFor="restaurant-currency">
+            Moneda
+          </label>
+          <input
+            id="restaurant-currency"
+            className={formStyles.input}
+            type="text"
+            value={getCurrencyLabel(DEFAULT_CURRENCY)}
+            readOnly
+            disabled
+            aria-describedby="restaurant-currency-hint"
+          />
+          <p id="restaurant-currency-hint" className={formStyles.hint}>
+            Próximamente podrás elegir la moneda del menú (EUR, USD, etc.) desde aquí.
+            Por ahora todos los precios usan peso argentino (ARS) en el panel y en los ajustes
+            masivos.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 interface AdminRestaurantMetaSectionProps {
   restaurant: Restaurant;
 }
@@ -322,6 +354,7 @@ export function AdminRestaurantPageReady({ viewModel, restaurant, form }: AdminR
           saving={saving}
           onUpdateField={updateField}
         />
+        <AdminRestaurantRegionalSection />
         <AdminRestaurantMetaSection restaurant={restaurant} />
 
         {isOwner ? (

@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import type { Category } from '../../../lib/admin-api';
+import { DEFAULT_CURRENCY, getCurrencySymbol } from '../../../lib/currency';
 import { AdminToggle } from '../AdminToggle';
 import formStyles from '../admin-form.module.scss';
 import {
@@ -10,6 +11,8 @@ import {
 } from './admin-menu-item-form.utils';
 import sharedStyles from './admin-menus-shared.module.scss';
 import styles from './AdminMenuItemForm.module.scss';
+
+const currencySymbol = getCurrencySymbol(DEFAULT_CURRENCY);
 
 interface AdminMenuItemFormProps {
   form: ItemFormState;
@@ -95,7 +98,7 @@ export function AdminMenuItemForm({
 
         <div className={formStyles.field}>
           <label className={formStyles.label} htmlFor="item-price">
-            Precio (€)
+            Precio ({currencySymbol})
           </label>
           <input
             id="item-price"

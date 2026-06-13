@@ -2,13 +2,26 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  height: 100%;
   min-height: 0;
   padding: 0;
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
   background: var(--admin-surface);
   overflow: hidden;
+}
+
+@media (min-width: 769px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    align-self: start;
+  }
+
+  .sidebarInLayout {
+    grid-column: 1;
+    grid-row: 2 / -1;
+  }
 }
 
 .sidebarHeader {
@@ -162,7 +175,11 @@
 
 @media (max-width: 768px) {
   .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     min-height: auto;
+    box-shadow: 0 1px 0 var(--admin-border);
   }
 
   .sidebarBody {

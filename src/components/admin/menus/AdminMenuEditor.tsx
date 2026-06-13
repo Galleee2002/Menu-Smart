@@ -9,6 +9,7 @@ interface AdminMenuEditorProps {
   items: MenuItem[];
   canEdit: boolean;
   isOwner: boolean;
+  inLayoutEditor?: boolean;
   onMenuUpdated: (menu: Menu) => void;
   onMenuDeleted: () => void;
   onCategoriesChange: (categories: Category[]) => void;
@@ -20,7 +21,14 @@ interface AdminMenuEditorProps {
 }
 
 export function AdminMenuEditor(props: AdminMenuEditorProps) {
-  const viewModel = useAdminMenuEditor(props);
+  const { inLayoutEditor, ...editorProps } = props;
+  const viewModel = useAdminMenuEditor(editorProps);
 
-  return <AdminMenuEditorContent menu={props.menu} viewModel={viewModel} />;
+  return (
+    <AdminMenuEditorContent
+      menu={editorProps.menu}
+      viewModel={viewModel}
+      inLayoutEditor={inLayoutEditor}
+    />
+  );
 }

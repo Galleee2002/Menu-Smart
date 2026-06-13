@@ -1,4 +1,4 @@
-import { Percent, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import type { Menu } from '../../../lib/admin-api';
 import { AdminConfirmDialog } from '../AdminConfirmDialog';
 import { AdminToggle } from '../AdminToggle';
@@ -24,8 +24,7 @@ function AdminMenuEditorToolbar({ menuName, canEdit, onOpenBulkPricing }: AdminM
           className={formStyles.secondaryButton}
           onClick={onOpenBulkPricing}
         >
-          <Percent size={14} strokeWidth={2.25} aria-hidden />
-          Ajuste de precios
+          Modificar precios
         </button>
       ) : null}
     </div>
@@ -314,11 +313,16 @@ function AdminMenuEditorDialogs({ menu, viewModel }: AdminMenuEditorDialogsProps
 interface AdminMenuEditorContentProps {
   menu: Menu;
   viewModel: AdminMenuEditorViewModel;
+  inLayoutEditor?: boolean;
 }
 
-export function AdminMenuEditorContent({ menu, viewModel }: AdminMenuEditorContentProps) {
+export function AdminMenuEditorContent({
+  menu,
+  viewModel,
+  inLayoutEditor = false,
+}: AdminMenuEditorContentProps) {
   return (
-    <div className={styles.editor}>
+    <div className={inLayoutEditor ? `${styles.editor} ${styles.editorInLayout}` : styles.editor}>
       <AdminMenuEditorToolbar
         menuName={menu.name}
         canEdit={viewModel.canEdit}

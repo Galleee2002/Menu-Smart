@@ -75,9 +75,20 @@
   display: grid;
   flex: 1;
   grid-template-columns: 260px minmax(0, 1fr);
-  gap: 24px;
-  align-items: stretch;
+  column-gap: 24px;
+  row-gap: 16px;
+  align-items: start;
   min-height: 0;
+}
+
+@media (min-width: 769px) {
+  .layoutEditor {
+    row-gap: 24px;
+
+    .main {
+      display: contents;
+    }
+  }
 }
 
 .main {
@@ -195,6 +206,7 @@
   .layout,
   .skeleton {
     grid-template-columns: 1fr;
+    row-gap: 12px;
   }
 }
 

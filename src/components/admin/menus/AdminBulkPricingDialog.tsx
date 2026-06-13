@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
+import { DEFAULT_CURRENCY, getCurrencySymbol } from '../../../lib/currency';
 import formStyles from '../admin-form.module.scss';
 import styles from './AdminBulkPricingDialog.module.scss';
+
+const currencySymbol = getCurrencySymbol(DEFAULT_CURRENCY);
 
 type PricingMode = 'percentage' | 'fixed';
 
@@ -83,12 +86,12 @@ export function AdminBulkPricingDialog({
               onChange={(event) => setMode(event.target.value as PricingMode)}
             >
               <option value="percentage">Porcentaje (%)</option>
-              <option value="fixed">Cantidad fija (€)</option>
+              <option value="fixed">Cantidad fija ({currencySymbol})</option>
             </select>
             <p className={formStyles.hint}>
               {mode === 'percentage'
                 ? 'Ej. 10 aumenta un 10 %. -5 reduce un 5 %.'
-                : 'Ej. 1.5 suma 1,50 €. -0.50 resta 0,50 €.'}
+                : `Ej. 150 suma ${currencySymbol}150. -50 resta ${currencySymbol}50.`}
             </p>
           </div>
 

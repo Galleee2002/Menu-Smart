@@ -6,30 +6,16 @@ import {
   type Category,
   type MenuItem,
 } from '../../../lib/admin-api';
-import { AdminConfirmDialog } from '../AdminConfirmDialog';
-import sharedStyles from './admin-menus-shared.module.scss';
-import { AdminMenuItemForm } from './AdminMenuItemForm';
+import { formatMenuPrice } from '../../../lib/currency';
 import {
   buildItemPatch,
   toItemFormState,
   type ItemFormState,
 } from './admin-menu-item-form.utils';
 import styles from './AdminMenuItemRow.module.scss';
-
-const euroFormatter = new Intl.NumberFormat('es-ES', {
-  style: 'currency',
-  currency: 'EUR',
-});
-
-function formatPrice(price: string): string {
-  const value = Number.parseFloat(price);
-
-  if (!Number.isFinite(value)) {
-    return price;
-  }
-
-  return euroFormatter.format(value);
-}
+import { AdminConfirmDialog } from '../AdminConfirmDialog';
+import sharedStyles from './admin-menus-shared.module.scss';
+import { AdminMenuItemForm } from './AdminMenuItemForm';
 
 interface AdminMenuItemRowProps {
   item: MenuItem;
@@ -241,7 +227,7 @@ export function AdminMenuItemRow({
             </div>
           ) : null}
         </div>
-        <span className={sharedStyles.price}>{formatPrice(item.price)}</span>
+        <span className={sharedStyles.price}>{formatMenuPrice(item.price)}</span>
       </div>
 
       {canEdit ? (

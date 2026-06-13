@@ -6,6 +6,7 @@ import {
   Users,
 } from 'lucide-react';
 import type { Menu, MenuItem, Member, Restaurant, Theme } from '../../lib/admin-api';
+import { DEFAULT_THEME } from '../../lib/theme-defaults';
 
 export type HomePageStatus = 'loading' | 'error' | 'ready';
 
@@ -82,15 +83,6 @@ export type HomePublishedMenu = {
   href: string;
 };
 
-const DEFAULT_THEME_COLORS = {
-  primaryColor: '#10b981',
-  secondaryColor: '#64748b',
-  backgroundColor: '#f8fafc',
-  textColor: '#0f172a',
-  accentColor: '#dc2626',
-  fontFamily: "'Inter', system-ui, sans-serif",
-} as const;
-
 export function buildHomeDashboardStats(
   menus: Menu[],
   categoryCount: number,
@@ -119,12 +111,12 @@ export function isThemeCustomized(theme: Theme | null): boolean {
   }
 
   return (
-    theme.primaryColor !== DEFAULT_THEME_COLORS.primaryColor ||
-    theme.secondaryColor !== DEFAULT_THEME_COLORS.secondaryColor ||
-    theme.backgroundColor !== DEFAULT_THEME_COLORS.backgroundColor ||
-    theme.textColor !== DEFAULT_THEME_COLORS.textColor ||
-    theme.accentColor !== DEFAULT_THEME_COLORS.accentColor ||
-    theme.fontFamily !== DEFAULT_THEME_COLORS.fontFamily
+    theme.primaryColor !== DEFAULT_THEME.primaryColor ||
+    theme.secondaryColor !== DEFAULT_THEME.secondaryColor ||
+    theme.backgroundColor !== DEFAULT_THEME.backgroundColor ||
+    theme.textColor !== DEFAULT_THEME.textColor ||
+    theme.accentColor !== DEFAULT_THEME.accentColor ||
+    theme.fontFamily !== DEFAULT_THEME.fontFamily
   );
 }
 

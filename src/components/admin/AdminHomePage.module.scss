@@ -243,7 +243,7 @@
 
 .quickLink {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   padding: 14px;
   border: 1px solid var(--admin-border);
@@ -269,29 +269,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--admin-radius-md);
   flex-shrink: 0;
 }
 
 .quickLinkIconRestaurant {
-  background: rgb(16 185 129 / 12%);
   color: #059669;
 }
 
 .quickLinkIconMenus {
-  background: rgb(37 99 235 / 12%);
   color: #2563eb;
 }
 
 .quickLinkIconTheme {
-  background: rgb(124 58 237 / 12%);
   color: #7c3aed;
 }
 
 .quickLinkIconMembers {
-  background: rgb(219 39 119 / 12%);
   color: #db2777;
 }
 
