@@ -2,7 +2,7 @@ const PUBLIC_EXACT_PATHS = new Set(['/', '/example', '/login', '/register']);
 
 const PUBLIC_PREFIXES = ['/api', '/_astro', '/favicon'];
 
-const PROTECTED_PREFIXES = ['/admin', '/temp-login'];
+const PROTECTED_PREFIXES = ['/admin'];
 
 export function isPublicPath(pathname: string): boolean {
   if (PUBLIC_EXACT_PATHS.has(pathname)) {

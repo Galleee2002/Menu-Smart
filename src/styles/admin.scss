@@ -1,0 +1,18 @@
+// Admin panel tokens — alineados con preset "Minimal Clean" (docs/design.md)
+[data-admin-theme] {
+  --admin-bg: #f8fafc;
+  --admin-surface: #ffffff;
+  --admin-muted: #f1f5f9;
+  --admin-text: #0f172a;
+  --admin-text-muted: #64748b;
+  --admin-border: #e2e8f0;
+  --admin-primary: #10b981;
+  --admin-primary-hover: #059669;
+  --admin-primary-focus: rgb(16 185 129 / 12%);
+  --admin-danger: #dc2626;
+  --admin-radius-md: 8px;
+  --admin-sidebar-width: 240px;
+  --admin-header-height: 56px;
+  --admin-font-body: 'Inter', system-ui, sans-serif;
+  --admin-font-heading: 'Inter', system-ui, sans-serif;
+}

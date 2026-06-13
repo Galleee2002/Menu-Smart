@@ -1,16 +1,22 @@
 ---
-import { TempLoginPage } from '../components/auth/TempLoginPage';
-import '../styles/auth.scss';
+import { AdminShell } from '../components/admin/AdminShell';
+import '../styles/admin.scss';
+
+interface Props {
+  sectionTitle?: string;
+  sectionDescription?: string;
+}
+
+const { sectionTitle, sectionDescription } = Astro.props;
 ---
 
-<html lang="es" data-auth-theme>
+<html lang="es" data-admin-theme>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
-    <title>SmartMenu — Sesión activa</title>
-    <meta name="description" content="Página temporal de sesión activa en SmartMenu." />
+    <title>SmartMenu — Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -37,12 +43,18 @@ import '../styles/auth.scss';
       }
 
       :focus-visible {
-        outline: 2px solid var(--auth-primary);
+        outline: 2px solid var(--admin-primary);
         outline-offset: 2px;
       }
     </style>
   </head>
   <body>
-    <TempLoginPage client:load />
+    <AdminShell
+      client:load
+      sectionTitle={sectionTitle}
+      sectionDescription={sectionDescription}
+    >
+      <slot />
+    </AdminShell>
   </body>
 </html>

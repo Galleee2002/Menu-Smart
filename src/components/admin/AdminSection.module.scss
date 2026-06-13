@@ -1,0 +1,41 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--admin-font-heading);
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--admin-text);
+}
+
+.description {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--admin-text-muted);
+}
+
+.placeholder {
+  padding: 32px 24px;
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--admin-text-muted);
+  }
+}

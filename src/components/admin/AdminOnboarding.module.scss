@@ -1,0 +1,134 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--admin-bg);
+  font-family: var(--admin-font-body);
+  color: var(--admin-text);
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 28px;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-surface);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 6%);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-primary);
+  color: #ffffff;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--admin-font-heading);
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--admin-text-muted);
+  line-height: 1.4;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--admin-text);
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  color: var(--admin-text);
+  line-height: 1.4;
+  transition: border-color 150ms ease;
+
+  &::placeholder {
+    color: var(--admin-text-muted);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--admin-primary);
+    box-shadow: 0 0 0 3px var(--admin-primary-focus);
+  }
+}
+
+.error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--admin-danger);
+  line-height: 1.4;
+}
+
+.submit {
+  margin-top: 4px;
+  width: 100%;
+  padding: 11px 16px;
+  border: none;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-primary);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: background-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--admin-primary-hover);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .submit {
+    transition: none;
+  }
+}
