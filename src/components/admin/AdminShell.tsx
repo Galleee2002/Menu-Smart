@@ -12,16 +12,17 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
-  type ReactNode,
+  useSyncExternalStore,
 } from 'react';
 import { getSession, signOut } from '../../lib/auth-api';
 import { listRestaurants, listMenus, type Restaurant, type RestaurantRole } from '../../lib/admin-api';
 import { ADMIN_NAV_ITEMS, isNavItemActive } from './admin-nav';
+import { getAdminPage } from './admin-pages';
 import { AdminProvider, type AdminContextValue } from './AdminContext';
 import { AdminOnboarding } from './AdminOnboarding';
-import { AdminSection } from './AdminSection';
 import styles from './AdminShell.module.scss';
 
 type BootstrapState =
@@ -36,18 +37,63 @@ type BootstrapState =
       previewHref: string | null;
     };
 
-interface AdminShellProps {
-  sectionTitle?: string;
-  sectionDescription?: string;
-  children?: ReactNode;
+type ShellUiState = {
+  sidebarOpen: boolean;
+  userMenuOpen: boolean;
+  loggingOut: boolean;
+};
+
+type ShellUiAction =
+  | { type: 'toggle_sidebar' }
+  | { type: 'close_sidebar' }
+  | { type: 'toggle_user_menu' }
+  | { type: 'close_user_menu' }
+  | { type: 'logout_start' }
+  | { type: 'logout_end' };
+
+const initialShellUiState: ShellUiState = {
+  sidebarOpen: false,
+  userMenuOpen: false,
+  loggingOut: false,
+};
+
+function shellUiReducer(state: ShellUiState, action: ShellUiAction): ShellUiState {
+  switch (action.type) {
+    case 'toggle_sidebar':
+      return { ...state, sidebarOpen: !state.sidebarOpen };
+    case 'close_sidebar':
+      return state.sidebarOpen ? { ...state, sidebarOpen: false } : state;
+    case 'toggle_user_menu':
+      return { ...state, userMenuOpen: !state.userMenuOpen };
+    case 'close_user_menu':
+      return state.userMenuOpen ? { ...state, userMenuOpen: false } : state;
+    case 'logout_start':
+      return { ...state, userMenuOpen: false, loggingOut: true };
+    case 'logout_end':
+      return { ...state, loggingOut: false };
+    default: {
+      const _exhaustive: never = action;
+      return _exhaustive;
+    }
+  }
 }
 
-export function AdminShell({ sectionTitle, sectionDescription, children }: AdminShellProps) {
+function subscribeToPathname(onStoreChange: () => void) {
+  window.addEventListener('popstate', onStoreChange);
+
+  return () => {
+    window.removeEventListener('popstate', onStoreChange);
+  };
+}
+
+function getPathnameSnapshot() {
+  return window.location.pathname;
+}
+
+export function AdminShell() {
   const [bootstrap, setBootstrap] = useState<BootstrapState>({ status: 'loading' });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [pathname, setPathname] = useState('');
+  const [ui, dispatchUi] = useReducer(shellUiReducer, initialShellUiState);
+  const pathname = useSyncExternalStore(subscribeToPathname, getPathnameSnapshot, () => '');
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const loadBootstrap = useCallback(async (): Promise<BootstrapState> => {
@@ -59,7 +105,7 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
 
     const restaurantsResult = await listRestaurants();
 
-    if (!restaurantsResult.ok) {
+    if (restaurantsResult.ok === false) {
       throw new Error(restaurantsResult.message);
     }
 
@@ -122,34 +168,23 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
   }, [loadBootstrap]);
 
   useEffect(() => {
-    setPathname(window.location.pathname);
-
-    const handlePopState = () => {
-      setPathname(window.location.pathname);
-      setSidebarOpen(false);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
+    dispatchUi({ type: 'close_sidebar' });
+  }, [pathname]);
 
   useEffect(() => {
-    if (!userMenuOpen) {
+    if (!ui.userMenuOpen) {
       return;
     }
 
     const handlePointerDown = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setUserMenuOpen(false);
+        dispatchUi({ type: 'close_user_menu' });
       }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setUserMenuOpen(false);
+        dispatchUi({ type: 'close_user_menu' });
       }
     };
 
@@ -160,11 +195,10 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [userMenuOpen]);
+  }, [ui.userMenuOpen]);
 
   const handleLogout = async () => {
-    setUserMenuOpen(false);
-    setLoggingOut(true);
+    dispatchUi({ type: 'logout_start' });
     const result = await signOut();
 
     if (result.ok) {
@@ -172,7 +206,7 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
       return;
     }
 
-    setLoggingOut(false);
+    dispatchUi({ type: 'logout_end' });
   };
 
   const visibleNavItems = useMemo(() => {
@@ -185,17 +219,23 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
     );
   }, [bootstrap]);
 
+  const PageComponent = useMemo(() => getAdminPage(pathname), [pathname]);
+
   if (bootstrap.status === 'loading') {
     return (
-      <div className={styles.loading} role="status" aria-live="polite">
+      <output className={styles.loading} aria-live="polite">
         <Loader2 className={styles.spinner} size={28} strokeWidth={2.25} aria-hidden />
         <span className={styles.loadingText}>Cargando panel…</span>
-      </div>
+      </output>
     );
   }
 
   if (bootstrap.status === 'onboarding') {
     return <AdminOnboarding onComplete={refresh} />;
+  }
+
+  if (bootstrap.status !== 'ready') {
+    return null;
   }
 
   const contextValue: AdminContextValue = {
@@ -205,7 +245,7 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
     refresh,
   };
 
-  const previewHref = bootstrap.status === 'ready' ? bootstrap.previewHref : null;
+  const previewHref = bootstrap.previewHref;
 
   return (
     <AdminProvider value={contextValue}>
@@ -215,12 +255,12 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
             <button
               type="button"
               className={styles.menuToggle}
-              aria-label={sidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
-              aria-expanded={sidebarOpen}
+              aria-label={ui.sidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
+              aria-expanded={ui.sidebarOpen}
               aria-controls="admin-sidebar"
-              onClick={() => setSidebarOpen((open) => !open)}
+              onClick={() => dispatchUi({ type: 'toggle_sidebar' })}
             >
-              {sidebarOpen ? (
+              {ui.sidebarOpen ? (
                 <X size={20} strokeWidth={2.25} aria-hidden />
               ) : (
                 <Menu size={20} strokeWidth={2.25} aria-hidden />
@@ -248,22 +288,22 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
                 className={styles.userMenuTrigger}
                 aria-label="Menú de cuenta"
                 aria-haspopup="menu"
-                aria-expanded={userMenuOpen}
+                aria-expanded={ui.userMenuOpen}
                 aria-controls="admin-user-menu"
-                onClick={() => setUserMenuOpen((open) => !open)}
+                onClick={() => dispatchUi({ type: 'toggle_user_menu' })}
               >
                 <span className={styles.userMenuAvatar} aria-hidden>
                   <User size={16} strokeWidth={2.25} />
                 </span>
                 <ChevronDown
-                  className={[styles.userMenuChevron, userMenuOpen ? styles.userMenuChevronOpen : ''].join(' ')}
+                  className={[styles.userMenuChevron, ui.userMenuOpen ? styles.userMenuChevronOpen : ''].join(' ')}
                   size={16}
                   strokeWidth={2.25}
                   aria-hidden
                 />
               </button>
 
-              {userMenuOpen ? (
+              {ui.userMenuOpen ? (
                 <div
                   id="admin-user-menu"
                   className={styles.userMenuPanel}
@@ -276,10 +316,10 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
                     className={styles.userMenuItem}
                     role="menuitem"
                     onClick={handleLogout}
-                    disabled={loggingOut}
+                    disabled={ui.loggingOut}
                   >
                     <LogOut size={16} strokeWidth={2.25} aria-hidden />
-                    {loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
+                    {ui.loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
                   </button>
                 </div>
               ) : null}
@@ -291,7 +331,7 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
         <div className={styles.body}>
           <aside
             id="admin-sidebar"
-            className={[styles.sidebar, sidebarOpen ? styles.sidebarOpen : ''].join(' ')}
+            className={[styles.sidebar, ui.sidebarOpen ? styles.sidebarOpen : ''].join(' ')}
             aria-label="Administración"
           >
             <nav className={styles.nav}>
@@ -306,7 +346,7 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
                         className={[styles.navLink, active ? styles.navLinkActive : ''].join(' ')}
                         href={item.href}
                         aria-current={active ? 'page' : undefined}
-                        onClick={() => setSidebarOpen(false)}
+                        onClick={() => dispatchUi({ type: 'close_sidebar' })}
                       >
                         <Icon size={18} strokeWidth={2.25} aria-hidden />
                         <span>{item.label}</span>
@@ -324,7 +364,7 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
                       href={previewHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => setSidebarOpen(false)}
+                      onClick={() => dispatchUi({ type: 'close_sidebar' })}
                     >
                       <ExternalLink size={18} strokeWidth={2.25} aria-hidden />
                       <span>Vista previa</span>
@@ -335,20 +375,17 @@ export function AdminShell({ sectionTitle, sectionDescription, children }: Admin
             </nav>
           </aside>
 
-          {sidebarOpen ? (
+          {ui.sidebarOpen ? (
             <button
               type="button"
               className={styles.backdrop}
               aria-label="Cerrar menú"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => dispatchUi({ type: 'close_sidebar' })}
             />
           ) : null}
 
           <main className={styles.main}>
-            {children ??
-              (sectionTitle ? (
-                <AdminSection title={sectionTitle} description={sectionDescription} />
-              ) : null)}
+            {PageComponent ? <PageComponent /> : null}
           </main>
         </div>
       </div>

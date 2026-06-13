@@ -25,13 +25,13 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-export type RateLimitOptions = {
+type RateLimitOptions = {
   windowMs?: number;
   max?: number;
   keyPrefix?: string;
 };
 
-export function createRateLimit(
+function createRateLimit(
   options: RateLimitOptions = {},
 ): MiddlewareHandler<AppEnv> {
   const keyPrefix = options.keyPrefix ?? "public";

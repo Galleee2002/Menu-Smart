@@ -2,7 +2,9 @@
 
 Documentación de la primera versión visual del menú público de demostración en `/example`.
 
-Esta versión es **solo frontend**, con datos mock, sin backend ni panel admin. **`/example` no requiere autenticación** — cualquier visitante puede verla.
+Esta versión es **solo frontend**, con datos mock. El panel admin (`/admin`) y la API backend existen por separado; la página pública real (`/menu/:restaurantSlug/:menuSlug`) reutilizará patrones de este design system con datos de `GET /api/public/menu/...`.
+
+**`/example` no requiere autenticación** — cualquier visitante puede verla.
 
 ---
 
@@ -10,11 +12,11 @@ Esta versión es **solo frontend**, con datos mock, sin backend ni panel admin. 
 
 | Incluye | No incluye |
 | ------- | ---------- |
-| Ruta `/example` para presentaciones a clientes (pública, sin login) | Panel `/admin` |
-| 3 presets visuales intercambiables | CRUD, API, auth |
+| Ruta `/example` para presentaciones a clientes (pública, sin login) | Datos reales de restaurantes (usa mock) |
+| 3 presets visuales intercambiables | Panel `/admin` (documentado en [FRONTEND.md](./FRONTEND.md)) |
 | Menú ficticio *Bella Napoli* | Imágenes de productos |
-| Scroll continuo por categorías | Alérgenos, productos destacados |
-| Título de categoría fijo que cambia al scrollear | Acordeones / apilado de secciones |
+| Scroll continuo por categorías | Ruta `/menu/:slug/:slug` (pendiente) |
+| Título de categoría fijo que cambia al scrollear | Temas desde BD / editor admin |
 
 ---
 
@@ -220,8 +222,7 @@ Campos de producto en v1: `id`, `name`, `description`, `price`, `category`, `ava
 ## Próximas versiones (fuera de v1)
 
 - Imágenes de productos
-- Alérgenos
-- Productos destacados
-- Menú público real en `/menu/:slug`
-- Temas configurables desde admin
-- Integración con API y `Theme` en Prisma
+- Alérgenos y productos destacados en UI pública
+- Menú público real en `/menu/:restaurantSlug/:menuSlug` (API ya disponible)
+- Temas configurables desde `/admin/theme` (API ya disponible)
+- Reutilizar tokens `--example-*` o mapear desde `Theme` de Prisma

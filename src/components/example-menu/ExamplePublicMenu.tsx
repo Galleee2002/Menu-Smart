@@ -11,16 +11,26 @@ import styles from './ExamplePublicMenu.module.scss';
 
 const CATEGORY_BAR_HEIGHT = 40;
 
+function useLazyMapRef<K, V>() {
+  const ref = useRef<Map<K, V> | null>(null);
+
+  if (ref.current === null) {
+    ref.current = new Map();
+  }
+
+  return ref;
+}
+
 interface ExamplePublicMenuProps {
   stickyOffset?: number;
 }
 
 export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) {
   const stickyShellRef = useRef<HTMLDivElement>(null);
-  const sectionRefs = useRef<Map<ExampleCategory, HTMLElement>>(new Map());
-  const sectionTitleRefs = useRef<Map<ExampleCategory, HTMLElement>>(new Map());
+  const sectionRefs = useLazyMapRef<ExampleCategory, HTMLElement>();
+  const sectionTitleRefs = useLazyMapRef<ExampleCategory, HTMLElement>();
 
-  const [stickyShellHeight, setStickyShellHeight] = useState(0);
+  const stickyShellHeightRef = useRef(0);
   const [activeCategory, setActiveCategory] = useState<ExampleCategory>(EXAMPLE_CATEGORIES[0]);
   const [concealedSectionTitles, setConcealedSectionTitles] = useState<ReadonlySet<ExampleCategory>>(
     () => new Set(),
@@ -44,6 +54,8 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
   );
 
   const updateActiveCategory = useCallback(() => {
+    const stickyShellHeight = stickyShellHeightRef.current;
+
     if (stickyShellHeight === 0 || activeCategories.length === 0) {
       return;
     }
@@ -97,7 +109,10 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
 
       return concealed;
     });
-  }, [activeCategories, stickyOffset, stickyShellHeight]);
+  }, [activeCategories, stickyOffset, sectionRefs, sectionTitleRefs]);
+
+  const updateActiveCategoryRef = useRef(updateActiveCategory);
+  updateActiveCategoryRef.current = updateActiveCategory;
 
   useEffect(() => {
     const stickyShell = stickyShellRef.current;
@@ -105,7 +120,10 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
       return;
     }
 
-    const measure = () => setStickyShellHeight(stickyShell.offsetHeight);
+    const measure = () => {
+      stickyShellHeightRef.current = stickyShell.offsetHeight;
+      updateActiveCategoryRef.current();
+    };
     measure();
 
     const observer = new ResizeObserver(measure);
@@ -115,15 +133,17 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
   }, []);
 
   useEffect(() => {
-    updateActiveCategory();
-    window.addEventListener('scroll', updateActiveCategory, { passive: true });
-    window.addEventListener('resize', updateActiveCategory);
+    const handleUpdate = () => updateActiveCategoryRef.current();
+
+    handleUpdate();
+    window.addEventListener('scroll', handleUpdate, { passive: true });
+    window.addEventListener('resize', handleUpdate);
 
     return () => {
-      window.removeEventListener('scroll', updateActiveCategory);
-      window.removeEventListener('resize', updateActiveCategory);
+      window.removeEventListener('scroll', handleUpdate);
+      window.removeEventListener('resize', handleUpdate);
     };
-  }, [updateActiveCategory]);
+  }, []);
 
   const setSectionRef = useCallback((category: ExampleCategory, node: HTMLElement | null) => {
     if (node) {
@@ -131,7 +151,7 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
     } else {
       sectionRefs.current.delete(category);
     }
-  }, []);
+  }, [sectionRefs]);
 
   const setSectionTitleRef = useCallback((category: ExampleCategory, node: HTMLElement | null) => {
     if (node) {
@@ -139,7 +159,7 @@ export function ExamplePublicMenu({ stickyOffset = 0 }: ExamplePublicMenuProps) 
     } else {
       sectionTitleRefs.current.delete(category);
     }
-  }, []);
+  }, [sectionTitleRefs]);
 
   const showCategoryInBar = concealedSectionTitles.has(activeCategory);
 

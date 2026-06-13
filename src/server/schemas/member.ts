@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const inviteMemberSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
 });
 
 export const updateMemberRoleSchema = z.object({

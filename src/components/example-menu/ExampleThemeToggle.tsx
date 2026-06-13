@@ -8,7 +8,8 @@ interface ExampleThemeToggleProps {
 
 export function ExampleThemeToggle({ themeId, onThemeChange }: ExampleThemeToggleProps) {
   return (
-    <div className={styles.toggle} role="group" aria-label="Selector de estilo visual">
+    <fieldset className={styles.toggle}>
+      <legend className={styles.srOnly}>Selector de estilo visual</legend>
       {EXAMPLE_MENU_THEMES.map((theme, index) => (
         <button
           key={theme.id}
@@ -22,6 +23,6 @@ export function ExampleThemeToggle({ themeId, onThemeChange }: ExampleThemeToggl
           {index + 1}
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }

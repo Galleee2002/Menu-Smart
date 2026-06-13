@@ -2,9 +2,9 @@
 
 | Campo      | Valor                                          |
 | ---------- | ---------------------------------------------- |
-| Versión    | 1.4                                            |
-| Estado     | Fase 0 completada · Fase 1 en curso (§6.2 auth · §6.3 restaurantes) |
-| Referencia | [PRD.md](./PRD.md) v1.3                        |
+| Versión    | 1.5                                            |
+| Estado     | Fase 0 completada · Fase 1 completada (backend MVP) |
+| Referencia | [PRD.md](./PRD.md) v1.4                        |
 | Alcance    | API Hono, Prisma, Better Auth, Neon PostgreSQL |
 | Owner      | GRGSolutions                                   |
 
@@ -51,25 +51,28 @@ El frontend (Astro + React) consume esta API; las fases aquí descritas no inclu
 
 ## 2. Estado actual
 
-Actualizado tras cierre de **Fase 0** (2026-06-10):
+Actualizado **junio 2026** — backend MVP operativo:
 
 | Componente               | Estado                                                                 |
 | ------------------------ | ---------------------------------------------------------------------- |
-| Neon PostgreSQL          | Provisionado; migración inicial aplicada; rama **Test** permanente para pruebas |
+| Neon PostgreSQL          | Provisionado; migración inicial aplicada; rama **Test** para Vitest   |
 | Esquema Prisma           | Dominio + Better Auth en `prisma/schema.prisma`                        |
 | Cliente Prisma           | Singleton con `@prisma/adapter-pg` en `src/server/lib/prisma.ts`       |
 | API Hono                 | Montada en `/api/*` vía `src/pages/api/[...path].ts`                   |
 | Health check             | `GET /api/health` operativo                                            |
-| Utilidades transversales | `errors.ts`, `response.ts`, `env.ts`                                   |
-| Vitest                   | Health + auth + restaurants en verde; `setup.ts` usa `DATABASE_URL_TEST` |
-| `.env.example`           | Documentado (incluye `DATABASE_URL_TEST`)                              |
 | Better Auth              | Operativo en `/api/auth/*`; `requireAuth` y rate limit auth (§6.2)     |
-| Restaurantes             | CRUD completo en `/api/restaurants/*`; RBAC base Owner/Staff (§6.3)    |
-| Miembros                 | CRUD en `/api/restaurants/:id/members/*`; solo Owner (§6.9)              |
-| Middleware seguridad MVP | Rate limit público, logging estructurado, RBAC completo (§6.10)        |
-| Zod / validación         | Schemas por entidad de dominio Fase 1                                    |
+| Restaurantes             | CRUD completo; RBAC Owner/Staff (§6.3)                                 |
+| Menús                    | CRUD + publicar/despublicar (§6.4)                                     |
+| Categorías               | CRUD + reorder (§6.5)                                                  |
+| Productos                | CRUD + reorder + bulk pricing (§6.6)                                   |
+| Temas                    | GET/PATCH + apply-preset (§6.7)                                        |
+| Menú público             | `GET /api/public/menu/:restaurantSlug/:menuSlug` (§6.8)                |
+| Miembros                 | CRUD en `/api/restaurants/:id/members/*` (§6.9)                        |
+| Middleware seguridad     | RBAC, rate limit público, logging estructurado (§6.10)                 |
+| Zod / validación         | Schemas por entidad; validación en handlers de escritura               |
+| Vitest                   | **96 tests** en verde (12 archivos); `DATABASE_URL_TEST` en setup      |
 
-**Punto de partida:** Fase 1 — MVP (Backend).
+**Punto de partida:** Fase 2 (personalización avanzada, QR) o cierre frontend MVP consumiendo esta API. Ver [FRONTEND.md](./FRONTEND.md).
 
 ---
 
@@ -113,7 +116,7 @@ Actualizado tras cierre de **Fase 0** (2026-06-10):
 
 ---
 
-## 4. Estructura de carpetas propuesta
+## 4. Estructura de carpetas (actual)
 
 ```text
 src/
@@ -405,11 +408,11 @@ Configurada el **2026-06-10** para aislar pruebas de integración de la base de 
 - [x] CRUD de categorías con reordenamiento.
 - [x] CRUD de productos (`MenuItem`) con disponibilidad y destacados.
 - [x] Gestión de temas (lectura y actualización).
-- [ ] Endpoint público de menú por slugs.
+- [x] Endpoint público de menú por slugs.
 - [x] Cambios masivos de precios (porcentual y fijo).
-- [ ] Middleware RBAC (Owner / Staff).
-- [ ] Validación Zod en todos los endpoints de escritura.
-- [ ] Seed de desarrollo opcional.
+- [x] Middleware RBAC (Owner / Staff).
+- [x] Validación Zod en todos los endpoints de escritura.
+- [ ] Seed de desarrollo opcional (`prisma/seed.ts`).
 
 ### 6.2 Autenticación (Better Auth)
 
@@ -1053,18 +1056,18 @@ Variables opcionales: `PUBLIC_RATE_LIMIT_MAX`, `PUBLIC_RATE_LIMIT_WINDOW_MS`.
 3. [x] Restaurants (CRUD + límite 1 por usuario)
 4. [x] Themes (default on create + GET/PATCH + apply-preset)
 5. [x] Menus (CRUD + isPublished)
-6. Categories (CRUD + reorder)
-7. Items (CRUD + reorder)
-8. Bulk pricing
+6. [x] Categories (CRUD + reorder)
+7. [x] Items (CRUD + reorder)
+8. [x] Bulk pricing
 9. [x] Public menu endpoint
 10. [x] Members (Owner)
 11. [x] Rate limit público + logs estructurados (auth rate limit hecho en §6.2)
-12. Seed dev + pruebas manuales/automáticas
+12. [ ] Seed dev + deploy preview verificado
 ```
 
 ### 6.12 Criterios de aceptación — Fase 1
 
-- [ ] Suite Vitest en verde: schemas Zod, servicios (slugify, bulk pricing), RBAC helpers.
+- [x] Suite Vitest en verde: schemas Zod, slugify, bulk pricing, RBAC (96 tests).
 - [x] Tests de integración API en verde: CRUD restaurantes (§6.3).
 - [x] Tests de integración API en verde: menús (§6.4).
 - [x] Tests de integración API en verde: categorías (§6.5).
@@ -1084,8 +1087,9 @@ Variables opcionales: `PUBLIC_RATE_LIMIT_MAX`, `PUBLIC_RATE_LIMIT_WINDOW_MS`.
 - [x] Staff no puede gestionar miembros.
 - [x] Menú público responde 404 si no publicado o restaurante inactivo (§6.8).
 - [x] Cambio masivo de precios actualiza todos los items del alcance (§6.6).
-- [ ] Todas las respuestas siguen el envelope del PRD.
-- [ ] Deploy en Vercel Preview con Neon staging operativo.
+- [x] Respuestas de dominio siguen el envelope del PRD (auth usa formato Better Auth).
+- [ ] Deploy en Vercel Preview con Neon staging verificado end-to-end.
+- [ ] Seed de desarrollo documentado y ejecutable.
 
 ---
 
@@ -1718,11 +1722,12 @@ Script `prisma/seed.ts` (desarrollo y base para seeds de test):
 
 ### Criterios de aceptación — testing (Fase 0–1)
 
-- [ ] `pnpm test:run` pasa en CI y local.
-- [ ] Cobertura de rutas MVP: todos los endpoints de §11 Fase 1 con al menos un test happy path.
-- [ ] Casos 401/403/404/409 cubiertos en recursos con RBAC.
-- [ ] Bulk pricing con tests de redondeo Decimal.
-- [ ] Menú público: solo menús `isPublished`; items no disponibles excluidos.
+- [x] `pnpm test:run` pasa en local (96 tests, 12 archivos).
+- [x] Cobertura de rutas MVP: todos los endpoints de §11 Fase 1 con al menos un test happy path.
+- [x] Casos 401/403/404/409 cubiertos en recursos con RBAC.
+- [x] Bulk pricing con tests de redondeo Decimal.
+- [x] Menú público: solo menús `isPublished`; items no disponibles excluidos.
+- [ ] Pipeline CI automatizado en GitHub Actions.
 
 ### Fuera de alcance MVP (backend)
 
@@ -1793,7 +1798,7 @@ jobs:
 | Fase  | Listo cuando…                                                                                       |
 | ----- | --------------------------------------------------------------------------------------------------- |
 | **0** | Health check OK, schema migrado, Hono montado en Astro, Vitest smoke en verde _(completado 2026-06-10)_ |
-| **1** | Todos los criterios PRD sección 19 cumplidos en backend; checklist sección 6.12; tests §14 en verde |
+| **1** | Backend MVP listo; frontend admin y menú público UI en curso _(backend checklist §6.12 casi completo)_ |
 | **2** | QR, presets y reorder árbol operativos                                                              |
 | **3** | Multi-restaurante + Super Admin + analytics end-to-end                                              |
 | **4** | i18n + sucursales + promociones en menú público                                                     |

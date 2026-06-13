@@ -21,7 +21,7 @@ export type MenuItemDto = {
   order: number;
 };
 
-export function toMenuItemDto(item: MenuItem): MenuItemDto {
+function toMenuItemDto(item: MenuItem): MenuItemDto {
   return {
     id: item.id,
     categoryId: item.categoryId,

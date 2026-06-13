@@ -1,5 +1,5 @@
 import { Check, Info } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useReducer, useRef } from 'react';
 import styles from './AuthToast.module.scss';
 
 const VISIBLE_MS = 4000;
@@ -13,29 +13,65 @@ interface AuthToastProps {
   onDismiss?: () => void;
 }
 
+type ToastState = {
+  mounted: boolean;
+  active: boolean;
+};
+
+type ToastAction =
+  | { type: 'sync_message'; message: string }
+  | { type: 'activate' }
+  | { type: 'deactivate' }
+  | { type: 'dismiss' };
+
+function toastReducer(state: ToastState, action: ToastAction): ToastState {
+  switch (action.type) {
+    case 'sync_message':
+      if (!action.message) {
+        return { mounted: false, active: false };
+      }
+
+      return { mounted: true, active: false };
+    case 'activate':
+      return state.mounted ? { ...state, active: true } : state;
+    case 'deactivate':
+      return { ...state, active: false };
+    case 'dismiss':
+      return { mounted: false, active: false };
+    default: {
+      const _exhaustive: never = action;
+      return _exhaustive;
+    }
+  }
+}
+
 export function AuthToast({ message, variant, onDismiss }: AuthToastProps) {
-  const [mounted, setMounted] = useState(false);
-  const [active, setActive] = useState(false);
+  const [state, dispatch] = useReducer(toastReducer, { mounted: false, active: false });
+  const prevMessageRef = useRef(message);
+
+  if (message !== prevMessageRef.current) {
+    prevMessageRef.current = message;
+    dispatch({ type: 'sync_message', message });
+  }
+
+  const onDismissEvent = useEffectEvent(() => {
+    onDismiss?.();
+  });
 
   useEffect(() => {
     if (!message) {
-      setMounted(false);
-      setActive(false);
       return;
     }
 
-    setMounted(true);
-    setActive(false);
-
     let enterFrame = 0;
     enterFrame = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setActive(true));
+      requestAnimationFrame(() => dispatch({ type: 'activate' }));
     });
 
-    const exitTimer = window.setTimeout(() => setActive(false), VISIBLE_MS);
+    const exitTimer = window.setTimeout(() => dispatch({ type: 'deactivate' }), VISIBLE_MS);
     const hiddenTimer = window.setTimeout(() => {
-      setMounted(false);
-      onDismiss?.();
+      dispatch({ type: 'dismiss' });
+      onDismissEvent();
     }, VISIBLE_MS + EXIT_MS);
 
     return () => {
@@ -43,9 +79,9 @@ export function AuthToast({ message, variant, onDismiss }: AuthToastProps) {
       window.clearTimeout(exitTimer);
       window.clearTimeout(hiddenTimer);
     };
-  }, [message, onDismiss]);
+  }, [message]);
 
-  if (!mounted) {
+  if (!state.mounted) {
     return null;
   }
 
@@ -55,7 +91,7 @@ export function AuthToast({ message, variant, onDismiss }: AuthToastProps) {
 
   return (
     <div
-      className={[styles.toast, variantClass, active ? styles.enter : ''].join(' ')}
+      className={[styles.toast, variantClass, state.active ? styles.enter : ''].join(' ')}
       role={variant === 'error' ? 'alert' : 'status'}
       aria-live={variant === 'error' ? 'assertive' : 'polite'}
     >
@@ -63,22 +99,4 @@ export function AuthToast({ message, variant, onDismiss }: AuthToastProps) {
       <span className={styles.message}>{message}</span>
     </div>
   );
-}
-
-interface AuthErrorToastProps {
-  message: string;
-  onDismiss?: () => void;
-}
-
-export function AuthErrorToast({ message, onDismiss }: AuthErrorToastProps) {
-  return <AuthToast message={message} variant="error" onDismiss={onDismiss} />;
-}
-
-interface AuthSuccessToastProps {
-  message: string;
-  onDismiss?: () => void;
-}
-
-export function AuthSuccessToast({ message, onDismiss }: AuthSuccessToastProps) {
-  return <AuthToast message={message} variant="success" onDismiss={onDismiss} />;
 }

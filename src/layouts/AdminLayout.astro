@@ -1,13 +1,6 @@
 ---
 import { AdminShell } from '../components/admin/AdminShell';
 import '../styles/admin.scss';
-
-interface Props {
-  sectionTitle?: string;
-  sectionDescription?: string;
-}
-
-const { sectionTitle, sectionDescription } = Astro.props;
 ---
 
 <html lang="es" data-admin-theme>
@@ -49,12 +42,6 @@ const { sectionTitle, sectionDescription } = Astro.props;
     </style>
   </head>
   <body>
-    <AdminShell
-      client:load
-      sectionTitle={sectionTitle}
-      sectionDescription={sectionDescription}
-    >
-      <slot />
-    </AdminShell>
+    <AdminShell client:load />
   </body>
 </html>

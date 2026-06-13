@@ -1,22 +1,83 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { AUTH_SUCCESS_REDIRECT, consumeAuthSuccessNotice, hasActiveSession, signIn } from '../../lib/auth-api';
-import { AuthErrorToast, AuthSuccessToast } from './AuthToast';
+import { useCallback, useEffect, useReducer, type FormEvent } from 'react';
+import {
+  AUTH_SUCCESS_REDIRECT,
+  consumeAuthSuccessNotice,
+  hasActiveSession,
+  signIn,
+} from '../../lib/auth-api';
+import { AuthErrorToast } from './AuthErrorToast';
+import { AuthSuccessToast } from './AuthSuccessToast';
 import { AuthShell } from './AuthShell';
 import { PasswordField } from './PasswordField';
 import styles from './AuthForm.module.scss';
 
 const REDIRECT_URL = AUTH_SUCCESS_REDIRECT;
 
-export function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
+type LoginFormState = {
+  email: string;
+  password: string;
+  error: string;
+  success: string;
+  loading: boolean;
+  checkingSession: boolean;
+};
 
-  const clearError = useCallback(() => setError(''), []);
-  const clearSuccess = useCallback(() => setSuccess(''), []);
+type LoginFormAction =
+  | { type: 'set_email'; value: string }
+  | { type: 'set_password'; value: string }
+  | { type: 'set_error'; message: string }
+  | { type: 'clear_error' }
+  | { type: 'set_success'; message: string }
+  | { type: 'clear_success' }
+  | { type: 'submit_start' }
+  | { type: 'submit_end' }
+  | { type: 'session_checked'; success?: string };
+
+const initialLoginFormState: LoginFormState = {
+  email: '',
+  password: '',
+  error: '',
+  success: '',
+  loading: false,
+  checkingSession: true,
+};
+
+function loginFormReducer(state: LoginFormState, action: LoginFormAction): LoginFormState {
+  switch (action.type) {
+    case 'set_email':
+      return { ...state, email: action.value };
+    case 'set_password':
+      return { ...state, password: action.value };
+    case 'set_error':
+      return { ...state, error: action.message, loading: false };
+    case 'clear_error':
+      return { ...state, error: '' };
+    case 'set_success':
+      return { ...state, success: action.message };
+    case 'clear_success':
+      return { ...state, success: '' };
+    case 'submit_start':
+      return { ...state, loading: true, error: '' };
+    case 'submit_end':
+      return { ...state, loading: false };
+    case 'session_checked':
+      return {
+        ...state,
+        checkingSession: false,
+        success: action.success ?? state.success,
+      };
+    default: {
+      const _exhaustive: never = action;
+      return _exhaustive;
+    }
+  }
+}
+
+export function LoginForm() {
+  const [state, dispatch] = useReducer(loginFormReducer, initialLoginFormState);
+
+  const clearError = useCallback(() => dispatch({ type: 'clear_error' }), []);
+  const clearSuccess = useCallback(() => dispatch({ type: 'clear_success' }), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,11 +93,7 @@ export function LoginForm() {
       }
 
       const notice = consumeAuthSuccessNotice();
-      if (notice) {
-        setSuccess(notice);
-      }
-
-      setCheckingSession(false);
+      dispatch({ type: 'session_checked', success: notice ?? undefined });
     });
 
     return () => {
@@ -46,34 +103,31 @@ export function LoginForm() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError('');
+    dispatch({ type: 'submit_start' });
 
-    const trimmedEmail = email.trim();
+    const trimmedEmail = state.email.trim();
 
     if (!trimmedEmail) {
-      setError('Ingresa tu email.');
+      dispatch({ type: 'set_error', message: 'Ingresa tu email.' });
       return;
     }
 
-    if (!password) {
-      setError('Ingresa tu contraseña.');
+    if (!state.password) {
+      dispatch({ type: 'set_error', message: 'Ingresa tu contraseña.' });
       return;
     }
 
-    setLoading(true);
-
-    const result = await signIn(trimmedEmail, password);
+    const result = await signIn(trimmedEmail, state.password);
 
     if (result.ok) {
       window.location.assign(REDIRECT_URL);
       return;
     }
 
-    setError(result.message);
-    setLoading(false);
+    dispatch({ type: 'set_error', message: result.message });
   };
 
-  if (checkingSession) {
+  if (state.checkingSession) {
     return null;
   }
 
@@ -92,8 +146,8 @@ export function LoginForm() {
               name="email"
               autoComplete="email"
               placeholder="tu@email.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              value={state.email}
+              onChange={(event) => dispatch({ type: 'set_email', value: event.target.value })}
               required
             />
           </div>
@@ -104,13 +158,13 @@ export function LoginForm() {
             name="password"
             autoComplete="current-password"
             placeholder="Tu contraseña"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            value={state.password}
+            onChange={(event) => dispatch({ type: 'set_password', value: event.target.value })}
             required
           />
 
-          <button className={styles.submit} type="submit" disabled={loading}>
-            {loading ? 'Ingresando…' : 'Ingresar'}
+          <button className={styles.submit} type="submit" disabled={state.loading}>
+            {state.loading ? 'Ingresando…' : 'Ingresar'}
           </button>
         </form>
 
@@ -122,8 +176,8 @@ export function LoginForm() {
         </p>
       </AuthShell>
 
-      {error ? <AuthErrorToast message={error} onDismiss={clearError} /> : null}
-      {success ? <AuthSuccessToast message={success} onDismiss={clearSuccess} /> : null}
+      {state.error ? <AuthErrorToast message={state.error} onDismiss={clearError} /> : null}
+      {state.success ? <AuthSuccessToast message={state.success} onDismiss={clearSuccess} /> : null}
     </>
   );
 }

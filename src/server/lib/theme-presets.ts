@@ -54,6 +54,6 @@ export const THEME_PRESETS: Record<ThemePresetId, ThemeColors> = {
   },
 };
 
-export function isThemePresetId(value: string): value is ThemePresetId {
+function isThemePresetId(value: string): value is ThemePresetId {
   return THEME_PRESET_IDS.includes(value as ThemePresetId);
 }

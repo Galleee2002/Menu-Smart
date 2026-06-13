@@ -23,29 +23,29 @@ function readStoredTheme(): ExampleMenuThemeId {
 }
 
 export function ExampleMenuDemo() {
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const [themeId, setThemeId] = useState<ExampleMenuThemeId>(DEFAULT_EXAMPLE_THEME_ID);
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const [themeId, setThemeId] = useState<ExampleMenuThemeId>(() => readStoredTheme());
   const [toolbarHeight, setToolbarHeight] = useState(0);
 
   useEffect(() => {
-    const stored = readStoredTheme();
-    setThemeId(stored);
-    document.documentElement.setAttribute('data-example-theme', stored);
-  }, []);
+    document.documentElement.setAttribute('data-example-theme', themeId);
+  }, [themeId]);
 
-  useEffect(() => {
-    const toolbar = toolbarRef.current;
-    if (!toolbar) {
+  const setToolbarRef = useCallback((node: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+
+    if (!node) {
+      setToolbarHeight(0);
       return;
     }
 
-    const measure = () => setToolbarHeight(toolbar.offsetHeight);
+    const measure = () => setToolbarHeight(node.offsetHeight);
     measure();
 
     const observer = new ResizeObserver(measure);
-    observer.observe(toolbar);
-
-    return () => observer.disconnect();
+    observer.observe(node);
+    observerRef.current = observer;
   }, []);
 
   const handleThemeChange = useCallback((nextThemeId: ExampleMenuThemeId) => {
@@ -56,7 +56,7 @@ export function ExampleMenuDemo() {
 
   return (
     <div className={styles.page}>
-      <div ref={toolbarRef} className={styles.toolbar}>
+      <div ref={setToolbarRef} className={styles.toolbar}>
         <span className={styles.label}>Vista de ejemplo</span>
         <ExampleThemeToggle themeId={themeId} onThemeChange={handleThemeChange} />
       </div>

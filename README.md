@@ -94,16 +94,20 @@ flowchart TB
 Menu-Smart/
 ├── prisma/                  # Esquema y migraciones
 ├── src/
-│   ├── components/          # UI React (menú de ejemplo, admin futuro)
-│   ├── lib/                 # Datos y utilidades del frontend
+│   ├── components/          # UI React (admin, auth, example-menu)
+│   ├── layouts/             # AdminLayout.astro
+│   ├── lib/                 # admin-api, auth-api, public-routes
+│   ├── middleware.ts        # Protección de rutas /admin/*
 │   ├── pages/
 │   │   ├── api/[...path].ts # Entry point de la API Hono
-│   │   ├── example.astro    # Demo visual del menú público
+│   │   ├── admin/*.astro    # Panel administrativo
+│   │   ├── login.astro, register.astro
+│   │   ├── example.astro    # Demo visual del menú
 │   │   └── index.astro
 │   ├── server/              # API: rutas, middleware, servicios, tests
 │   ├── styles/              # Tokens y temas SCSS
 │   └── test/                # Setup global de Vitest
-└── docs/                    # PRD, backend, diseño, endpoints
+└── docs/                    # Índice en docs/README.md
 ```
 
 ---
@@ -163,10 +167,12 @@ Base URL: `/api`
 | :--- | :---: | :--- |
 | `GET /api/health` | ✅ | Health check |
 | `/api/auth/*` | ✅ | Autenticación (Better Auth) |
-| `/api/restaurants/*` | ✅ | CRUD de restaurantes + RBAC |
-| Menús, categorías, productos | 🚧 | Fase 1 en curso |
+| `/api/restaurants/*` | ✅ | CRUD + miembros |
+| `/api/menus`, `/categories`, `/items` | ✅ | Catálogo completo + bulk pricing |
+| `/api/themes/*` | ✅ | Temas y presets |
+| `/api/public/menu/*` | ✅ | Menú público (sin auth) |
 
-> Detalle completo de contratos y ejemplos: [`docs/ENDPOINTS-FRONTEND.md`](docs/ENDPOINTS-FRONTEND.md)
+> Contratos y ejemplos: [`docs/ENDPOINTS-FRONTEND.md`](docs/ENDPOINTS-FRONTEND.md) · Estado frontend: [`docs/FRONTEND.md`](docs/FRONTEND.md)
 
 ---
 
@@ -174,9 +180,11 @@ Base URL: `/api`
 
 | Documento | Contenido |
 | :--- | :--- |
+| [`docs/README.md`](docs/README.md) | **Índice** y estado resumido del proyecto |
 | [`docs/PRD.md`](docs/PRD.md) | Visión del producto y requisitos |
-| [`docs/BACKEND-IMPLEMENTATION.md`](docs/BACKEND-IMPLEMENTATION.md) | Plan de implementación del backend por fases |
-| [`docs/ENDPOINTS-FRONTEND.md`](docs/ENDPOINTS-FRONTEND.md) | Contrato API para consumo desde el frontend |
+| [`docs/BACKEND-IMPLEMENTATION.md`](docs/BACKEND-IMPLEMENTATION.md) | Backend por fases (Fase 1 completada) |
+| [`docs/ENDPOINTS-FRONTEND.md`](docs/ENDPOINTS-FRONTEND.md) | Contrato API para el frontend |
+| [`docs/FRONTEND.md`](docs/FRONTEND.md) | Panel admin, auth, rutas y pendientes |
 | [`docs/design.md`](docs/design.md) | Design system del menú de ejemplo |
 
 ---
@@ -186,7 +194,8 @@ Base URL: `/api`
 | Fase | Alcance | Estado |
 | :--- | :--- | :---: |
 | **0** | Fundamentos: Prisma, Hono, health check, tests | ✅ |
-| **1** | MVP: auth, restaurantes, menús, productos | 🔄 En curso |
+| **1** | MVP backend: auth, CRUD, menú público API | ✅ |
+| **1** | MVP frontend: admin, menú público UI | 🔄 En curso |
 | **2** | Personalización y organización | ⏳ |
 | **3** | SaaS multi-tenant y analytics | ⏳ |
 | **4** | Internacionalización | ⏳ |

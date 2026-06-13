@@ -1,7 +1,7 @@
 const AUTH_BASE = '/api/auth';
 
 export const AUTH_SUCCESS_REDIRECT = '/admin';
-export const AUTH_SUCCESS_NOTICE_KEY = 'smartmenu-auth-success-notice';
+const AUTH_SUCCESS_NOTICE_KEY = 'smartmenu-auth-success-notice';
 export const AUTH_REGISTER_SUCCESS_MESSAGE =
   'Cuenta creada correctamente. Inicia sesión con tu email y contraseña.';
 

@@ -20,7 +20,7 @@ export type ThemeDto = {
   updatedAt: string;
 };
 
-export function toThemeDto(theme: Theme): ThemeDto {
+function toThemeDto(theme: Theme): ThemeDto {
   return {
     id: theme.id,
     restaurantId: theme.restaurantId,

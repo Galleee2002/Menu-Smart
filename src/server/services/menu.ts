@@ -14,7 +14,7 @@ export type MenuDto = {
   updatedAt: string;
 };
 
-export function toMenuDto(menu: Menu): MenuDto {
+function toMenuDto(menu: Menu): MenuDto {
   return {
     id: menu.id,
     restaurantId: menu.restaurantId,

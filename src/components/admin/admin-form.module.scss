@@ -1,0 +1,118 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--admin-text);
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-muted);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  color: var(--admin-text);
+  line-height: 1.4;
+  transition: border-color 150ms ease;
+
+  &::placeholder {
+    color: var(--admin-text-muted);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--admin-primary);
+    box-shadow: 0 0 0 3px var(--admin-primary-focus);
+  }
+
+  &:read-only {
+    cursor: default;
+    opacity: 0.85;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--admin-text-muted);
+}
+
+.error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--admin-danger);
+  line-height: 1.4;
+}
+
+.submit {
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-primary);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: background-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--admin-primary-hover);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+.secondaryButton {
+  padding: 8px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  transition: border-color 150ms ease, background-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--admin-muted);
+    border-color: var(--admin-text-muted);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .textarea,
+  .submit,
+  .secondaryButton {
+    transition: none;
+  }
+}

@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, use, type ReactNode } from 'react';
 import type { AuthUser } from '../../lib/auth-api';
 import type { Restaurant, RestaurantRole } from '../../lib/admin-api';
 
@@ -21,7 +21,7 @@ export function AdminProvider({ value, children }: AdminProviderProps) {
 }
 
 export function useAdmin(): AdminContextValue {
-  const context = useContext(AdminContext);
+  const context = use(AdminContext);
 
   if (!context) {
     throw new Error('useAdmin debe usarse dentro de AdminProvider.');

@@ -18,7 +18,7 @@ const ROLE_CREDENTIALS: Record<TestRole, { email: string; name: string }> = {
 };
 
 /** Returns the test database URL (Neon branch or local Postgres). */
-export function getTestDatabaseUrl(): string {
+function getTestDatabaseUrl(): string {
   const url = process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL;
 
   if (!url) {

@@ -27,7 +27,7 @@ export const loadRestaurantMember: MiddlewareHandler<AppEnv> = async (c, next) =
 };
 
 /** Alias aligned with BACKEND-IMPLEMENTATION §6.10 naming. */
-export const requireRestaurantMember = loadRestaurantMember;
+const requireRestaurantMember = loadRestaurantMember;
 
 export function requireRole(...roles: RestaurantRole[]): MiddlewareHandler<AppEnv> {
   return async (c, next) => {

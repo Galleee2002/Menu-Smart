@@ -2,8 +2,8 @@
 
 | Campo      | Valor                                              |
 | ---------- | -------------------------------------------------- |
-| Versión    | 1.0                                                |
-| Alcance    | Fase 0 + Fase 1 (auth, restaurantes, miembros, menús, categorías, productos, temas, menú público) |
+| Versión    | 1.1                                                |
+| Alcance    | Fase 0 + Fase 1 (API completa). Integración frontend parcial — ver [FRONTEND.md](./FRONTEND.md) |
 | Referencia | [BACKEND-IMPLEMENTATION.md](./BACKEND-IMPLEMENTATION.md) |
 | Base URL   | `/api` (mismo origen que la app Astro)             |
 
@@ -14,9 +14,9 @@
 | Fase | Estado   | Grupos documentados                          |
 | ---- | -------- | -------------------------------------------- |
 | 0    | Completa | Health check                                 |
-| 1    | Completa | Auth (Better Auth), Restaurantes, Miembros, Menús, Categorías, Productos, Temas, Menú público |
+| 1    | Completa | Auth, Restaurantes, Miembros, Menús, Categorías, Productos, Temas, Menú público |
 
----
+Cliente tipado en frontend: `src/lib/admin-api.ts` (restaurantes → bulk pricing). **Pendiente:** wrappers para temas y miembros.
 
 ## Convenciones
 
@@ -407,7 +407,7 @@ Todas las rutas requieren sesión (`401` sin cookie). El usuario debe pertenecer
 | `restaurantId` | `string`  | Restaurante al que pertenece el menú                     |
 | `name`         | `string`  | Nombre visible del menú                                  |
 | `slug`         | `string`  | Identificador URL; único dentro del restaurante          |
-| `isPublished`  | `boolean` | Si `true`, visible en el endpoint público (futuro §6.8)   |
+| `isPublished`  | `boolean` | Si `true`, visible en `GET /api/public/menu/...`        |
 | `createdAt`    | `string`  | ISO 8601                                                 |
 | `updatedAt`    | `string`  | ISO 8601                                                 |
 
@@ -999,6 +999,8 @@ const { success, data } = await res.json();
 ---
 
 ## Flujo recomendado para el frontend
+
+Flujo de onboarding y admin ya implementado parcialmente en `AdminShell` + páginas admin. Referencia completa de UI: [FRONTEND.md](./FRONTEND.md).
 
 ```text
 1. POST /api/auth/sign-up/email  →  registro

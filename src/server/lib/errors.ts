@@ -1,6 +1,6 @@
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
-export class AppError extends Error {
+class AppError extends Error {
   readonly status: ContentfulStatusCode;
   readonly code?: string;
 
@@ -30,7 +30,7 @@ export class ForbiddenError extends AppError {
   }
 }
 
-export class UnauthorizedError extends AppError {
+class UnauthorizedError extends AppError {
   constructor(message = "Unauthorized") {
     super(message, 401, "UNAUTHORIZED");
     this.name = "UnauthorizedError";

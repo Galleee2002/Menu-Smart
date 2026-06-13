@@ -14,7 +14,7 @@ export type CategoryDto = {
   order: number;
 };
 
-export function toCategoryDto(category: Category): CategoryDto {
+function toCategoryDto(category: Category): CategoryDto {
   return {
     id: category.id,
     menuId: category.menuId,

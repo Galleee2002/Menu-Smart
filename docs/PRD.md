@@ -2,8 +2,8 @@
 
 | Campo   | Valor        |
 | ------- | ------------ |
-| Versión | 1.3          |
-| Estado  | Draft        |
+| Versión | 1.4          |
+| Estado  | MVP en curso |
 | Owner   | GRGSolutions |
 
 ---
@@ -72,7 +72,7 @@ El sistema estará diseñado para ser escalable y preparado para evolucionar hac
 | **Base de datos** | Neon PostgreSQL                                        |
 | **Hosting**     | Vercel                                                   |
 | **Versionado**  | Git, GitHub                                              |
-| **Testing**     | Vitest, Testing Library, Playwright, Lighthouse CI, axe-core (Playwright) |
+| **Testing**     | Vitest (96 tests integración API). Playwright, Lighthouse CI y axe-core _(planificados)_ |
 | **CI/CD**       | GitHub Actions _(fase futura)_                           |
 
 ---
@@ -619,15 +619,16 @@ Evitar SQLite para tests de integración: mantener paridad con Neon PostgreSQL e
 
 ### Scripts npm (referencia)
 
+Disponibles hoy en `package.json`:
+
 ```json
 {
   "test": "vitest",
-  "test:run": "vitest run",
-  "test:e2e": "playwright test",
-  "test:e2e:ui": "playwright test --ui",
-  "lhci": "lhci autorun"
+  "test:run": "vitest run"
 }
 ```
+
+Planificados para CI completo: `test:e2e`, `lhci` (ver §19).
 
 ### CI (GitHub Actions — fase futura)
 
@@ -664,17 +665,18 @@ Evitar SQLite para tests de integración: mantener paridad con Neon PostgreSQL e
 
 El producto será considerado listo para producción cuando:
 
-- [ ] CRUD completo de menús funcionando (múltiples menús por restaurante).
-- [ ] CRUD completo de categorías funcionando.
-- [ ] CRUD completo de productos funcionando.
-- [ ] Menú público funcionando (URL por menú).
-- [ ] Dashboard funcionando.
-- [ ] Autenticación funcionando.
-- [ ] Persistencia en Neon funcionando.
+- [x] CRUD completo de menús funcionando (múltiples menús por restaurante).
+- [x] CRUD completo de categorías funcionando.
+- [x] CRUD completo de productos funcionando.
+- [x] Menú público API funcionando (URL por menú).
+- [ ] Menú público UI en `/menu/:restaurantSlug/:menuSlug`.
+- [ ] Dashboard admin completo (tema, equipo, inicio).
+- [x] Autenticación funcionando.
+- [x] Persistencia en Neon funcionando.
 - [ ] Deploy automatizado funcionando.
-- [ ] Responsive validado.
+- [ ] Responsive validado en menú público real.
 - [ ] Lighthouse superior a 90.
-- [ ] Suite Vitest en verde (unit + integración API).
+- [x] Suite Vitest en verde (integración API — 96 tests).
 - [ ] Al menos 5 tests E2E críticos en verde (auth, CRUD, menú público, roles).
 - [ ] Lighthouse CI > 90 en staging.
 - [ ] Menú público sin violaciones a11y críticas (axe-core).
@@ -683,15 +685,51 @@ El producto será considerado listo para producción cuando:
 
 ## 20. Estado Actual del Proyecto
 
-**Situación actual:**
+**Actualizado:** junio 2026. Detalle técnico ampliado en [docs/README.md](./README.md), [BACKEND-IMPLEMENTATION.md](./BACKEND-IMPLEMENTATION.md) y [FRONTEND.md](./FRONTEND.md).
+
+### Backend (Fase 0 + Fase 1)
 
 | Componente | Estado |
 | ---------- | ------ |
-| Proyecto | Fase inicial |
-| Estructura Astro | Creada |
-| Esquema Prisma | Sin esquema definitivo |
-| API Hono | Sin implementar |
-| Autenticación | Sin implementar _(decisión: Better Auth + Prisma + Neon)_ |
-| Integración Neon | Sin implementar |
+| Neon PostgreSQL | ✅ Provisionado; rama **Test** para Vitest |
+| Esquema Prisma + migración inicial | ✅ `prisma/schema.prisma` |
+| API Hono en `/api/*` | ✅ Montada vía `src/pages/api/[...path].ts` |
+| Better Auth (`/api/auth/*`) | ✅ Email + password, cookies httpOnly |
+| CRUD restaurantes, menús, categorías, productos | ✅ Con RBAC Owner/Staff |
+| Temas y presets | ✅ GET/PATCH/apply-preset |
+| Miembros (invitar Staff) | ✅ Solo Owner |
+| Menú público API | ✅ `GET /api/public/menu/:restaurantSlug/:menuSlug` |
+| Rate limit + logs estructurados | ✅ Auth (Better Auth) + público (Hono) |
+| Tests Vitest | ✅ 96 tests en verde (`pnpm test:run`) |
 
-Este documento representa la visión objetivo del producto y servirá como guía de implementación para las siguientes iteraciones.
+### Frontend
+
+| Componente | Estado |
+| ---------- | ------ |
+| Auth UI (`/login`, `/register`) | ✅ |
+| Middleware protección `/admin/*` | ✅ |
+| Panel admin (shell, sidebar, onboarding) | ✅ |
+| Página restaurante | ✅ Edición y eliminación |
+| Editor de menús | ✅ CRUD menús, categorías, productos, bulk pricing |
+| Páginas tema y equipo | 🔄 Placeholder (API lista) |
+| Dashboard inicio `/admin` | 🔄 Placeholder |
+| Menú público UI `/menu/:slug/:slug` | ⏳ Pendiente (API lista) |
+| Demo visual `/example` | ✅ Datos mock, 3 presets — ver [design.md](./design.md) |
+
+### Infraestructura y calidad
+
+| Componente | Estado |
+| ---------- | ------ |
+| Deploy Vercel | Configurado (`@astrojs/vercel`); CI automatizado pendiente |
+| Playwright E2E | ⏳ No instalado |
+| Lighthouse CI / axe-core | ⏳ Planificado |
+| Seed `prisma/seed.ts` | ⏳ Pendiente |
+
+### Próximos hitos MVP
+
+1. Página pública del menú consumiendo la API.
+2. UI de apariencia (temas) y gestión de equipo.
+3. Dashboard de inicio con resumen.
+4. E2E smoke y pipeline CI.
+
+Este documento sigue siendo la referencia de producto; el estado técnico detallado vive en los documentos enlazados arriba.

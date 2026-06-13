@@ -19,7 +19,7 @@ export type RestaurantDto = {
   role?: RestaurantRole;
 };
 
-export function toRestaurantDto(
+function toRestaurantDto(
   restaurant: Restaurant,
   role?: RestaurantRole,
 ): RestaurantDto {

@@ -109,14 +109,18 @@ export async function getPublicMenu(
     throw new NotFoundError();
   }
 
-  const categories = menu.categories
-    .filter((category) => category.items.length > 0)
-    .map((category) => ({
-      id: category.id,
-      name: category.name,
-      order: category.order,
-      items: category.items.map(toPublicMenuItemDto),
-    }));
+  const categories = menu.categories.flatMap((category) =>
+    category.items.length > 0
+      ? [
+          {
+            id: category.id,
+            name: category.name,
+            order: category.order,
+            items: category.items.map(toPublicMenuItemDto),
+          },
+        ]
+      : [],
+  );
 
   return {
     restaurant: {
